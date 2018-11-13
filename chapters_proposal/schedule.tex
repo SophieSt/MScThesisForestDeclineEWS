@@ -1,0 +1,40 @@
+\section{Time Schedule}\label{sec:schedule}
+
+%pgfgantt
+
+\begin{figure} [!h]
+  \resizebox{\textwidth}{!}{
+    \begin{ganttchart}[hgrid, vgrid]{1}{31}
+      \gantttitle{2018}{31} \\
+      \gantttitle{January}{4} \gantttitle{February}{4} \gantttitle{March}{4} \gantttitle{April}{5}
+      \gantttitle{May}{4} \gantttitle{June}{4} \gantttitle{July}{5} \gantttitle{\scriptsize{Aug}}{1}\\
+      \gantttitle{08}{1} \gantttitle{15}{1} \gantttitle{22}{1} \gantttitle{29}{1} \gantttitle{05}{1} %5
+      \gantttitle{12}{1} \gantttitle{19}{1} \gantttitle{26}{1} \gantttitle{05}{1} \gantttitle{12}{1} %10
+      \gantttitle{19}{1} \gantttitle{26}{1} \gantttitle{02}{1} \gantttitle{09}{1} \gantttitle{16}{1} %15
+      \gantttitle{23}{1} \gantttitle{30}{1} \gantttitle{07}{1} \gantttitle{14}{1} \gantttitle{21}{1} %20
+      \gantttitle{28}{1} \gantttitle{04}{1} \gantttitle{11}{1} \gantttitle{18}{1} \gantttitle{25}{1} %25
+      \gantttitle{02}{1} \gantttitle{09}{1} \gantttitle{16}{1} \gantttitle{23}{1} \gantttitle{30}{1} %30
+      \gantttitle{06}{1} \\ %31
+      \ganttbar[bar/.append style={fill=gray!20}]{Proposal writing \& Literature Review}{1}{7} \\
+      \ganttbar[bar/.append style={fill=gray!20}]{Thesis writing}{6}{30} \\
+      \ganttgroup[group/.append style={fill=gray!95}]{Analysis}{6}{26} \\
+      \ganttbar[bar/.append style={fill=gray!20}]{Preprocessing}{6}{11} \\
+      \ganttbar[bar/.append style={fill=gray!20}]{EWS Extraction}{10}{14} \\
+      \ganttbar[bar/.append style={fill=gray!20}]{Sensitivity Analysis of EWS}{15}{17} \\
+      \ganttbar[bar/.append style={fill=gray!20}]{Model Setup}{17}{18} \\
+      \ganttmilestone[milestone/.append style={fill=gray!90}]{Mid-Term Presentation}{17} \\   
+      \ganttbar[bar/.append style={fill=gray!20}]{Prediction}{19}{22} \\
+      \ganttbar[bar/.append style={fill=gray!20}]{Validation}{23}{26} \\
+      %\ganttbar[bar/.append style={fill=gray!20}]{Linking EWS to Ecological Processes}{24}{25} \\
+      \ganttgroup[group/.append style={fill=gray!95}]{Finalisation}{30}{31} \\
+      \ganttmilestone[milestone/.append style={fill=gray!90}]{Hand-in}{31} \\
+      \ganttbar[bar/.append style={fill=black}]{INF-32306 Software Engineering}{11}{18}
+      %\ganttlink{elem4}{elem5} 
+      \ganttlink{elem6}{elem8} 
+      %\ganttlink{elem7}{elem8} 
+      \ganttlink{elem8}{elem9} 
+    \end{ganttchart}
+  }
+  \caption{Gantt chart of the proposed time schedule. Second line indicates the according month, third line numbers indicate the starting day of each week (Monday).}
+  \label{fig:schedule}
+\end{figure}

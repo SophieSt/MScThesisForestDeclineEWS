@@ -1,0 +1,44 @@
+\section{Research Questions}\label{sec:rq}
+The 2012 and 2016 droughts in Catalonia have shown that the increasingly frequency of drought events put forest ecosystems under stress resulting in increased mortality. Therefore, the overall goal of this research is to identify Early Warning Signals (EWS) from stallite imagery that can be used to predict tree mortality. The study area features mainly small forest patches that require high resolution, like e.g. Landsat~TM. This sensor does not provide a dense time series. Therefore, the following research questions have been stated:
+
+\begin{itemize}
+%\item Is there a relationship between tree-ring data and Early Warning Signals (EWS) from spaceborne sensors (MODIS NDVI, EVI, LAI, NBR, AMSR-E VOD, Landsat NDVI)?
+%\item Which Early Warning Signals (EWS) show Critical Slowing Down (CSD), and can thus be used as indicators and predictors?
+%\item Can the EWS predict tree mortality?
+%\item How well does the model perform on an independent validation dataset?
+%\item If so, which data and Early Warning Signals (predictors) are important to predict tree mortality? Can they be linked to physiological processes on the ground?
+%\item In what way do predictions for tree mortality differ according to species and forest characteristics?
+\item Are there EWS that show Critical Slowing Down (CSD)?
+\item Which EWS work for Landsat~TM time series in the Mediterranean? Spatial or temporal? Metric-based or model-based? Based on which index?
+\item Can they be used to predict tree mortality on the ground?
+%\item \textit{Seasonality Detrending?}
+\end{itemize}
+
+\bigskip
+\bigskip
+
+
+\begin{figure}[!h]
+	\centering
+	\begin{tikzpicture}[node distance = 2cm, auto]
+		% node placement
+		%\node [block] (RQ1) {Relationship EWS from Tree-Rings and from EO-Remote Sensing data?};
+		%\node [block] (RQ1) {CSD in EWS?};
+	   	%\node [block, below = of RQ1] (RQ2) {EWS for predicting Tree Mortality?};
+	   	%\node [block, below right = of RQ2, xshift = -2.3cm] (RQ3) {Importance of data sources and EWS? Processes?};
+		%\node [block, below left = of RQ2, xshift = 2cm] (RQ4) {Independent Validation/Performance on Model?};
+		% edge drawing
+		%\path[line] (RQ1) -- (RQ2);
+		%\path[line] (RQ2) -| (RQ3);
+		%\path[line] (RQ2) -| (RQ4);
+		\node [block] (RQ1) {Critical Slowing Down?};
+		\node [block, below right = of RQ1, xshift = -1cm] (RQ2) {Which EWS for Landsat TM?};		
+		\node [block, below right = of RQ2, xshift = -1cm] (RQ3) {EWS to predict tree mortality?};
+		
+		\path[line] (RQ1) |- (RQ2);
+		\path[line] (RQ2) |- (RQ3);
+	\end{tikzpicture}
+\end{figure}
+
+
+

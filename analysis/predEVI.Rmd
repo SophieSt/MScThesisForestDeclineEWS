@@ -1,0 +1,423 @@
+---
+title: "What's the role of EVI-based resilience in Forest Decline?"
+author: "Sophie C. Stuhler"
+date: "8 August 2018"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+requiredPackages = c('rgdal', 'raster', 'zoo', 'randomForest', 'ggplot2', 'pscl', 'caret')
+
+for(p in requiredPackages){
+  if(!require(p,character.only = TRUE)) install.packages(p, repos = 'http://cran.uni-muenster.de/')
+  library(p,character.only = TRUE)
+}
+
+outdir <- '/evi'
+set.seed(18462)
+
+
+```
+
+
+```{r load Chaparro et al 2017 dataset}
+predictors2012 <- read.csv('data/BaseDades_FINAL filtre_modificada.csv', 
+                           header = TRUE, sep = ';', dec = ',')
+predictors2012$AFECTAT <- factor(x = predictors2012$AFECTAT, 
+                                 levels = c(0, 1), 
+                                 labels = c('not.affected', 'affected'))
+dropPreds <- c('ID_GRAFIC', 'ID', 'PERIMETRE', 'AREA', 'PERCENTATGE_CELA',
+               'AT_JUNY', 'AT_JULIOL', 'AT_AGOST', 'SMOS_MATI',
+               'SPI_AGO_6', 'SPI_AGO_24', 'NSMOSMATI', 'NSMOSTARDA', 'LITOLOGIA',
+               'PREC_ESTIU', 'T_ESTIU', 'MCSC', 'CODI', 'AREA_POL', 'EPISODINOU',
+               'NOMCOMARCA', 'RECOBRIMENT', 'RAD_ESTIU', 'T_ANY')
+predictors2012 <- predictors2012[, !(names(predictors2012) %in% dropPreds)]
+speciesnames <- levels(predictors2012$NOMESPECIE)
+coordinates(predictors2012) <- ~X+Y
+proj4string(predictors2012) <- CRS('+init=epsg:32631')
+e <- extent(predictors2012)
+r <- raster(e, resolution = 1000)
+x <- rasterize(predictors2012, r, 
+               fun = function(x, ...) {ifelse(is.factor(x), modal(x), mean(x))})
+x$NOMESPECIE <- factor(x = x$NOMESPECIE, levels = c(1:8), labels = speciesnames)
+plot(x)
+
+```
+
+```{r load ews predictors}
+eviSpEWS <- brick('output/rasteredSpEWSevi2012.tif')
+names(eviSpEWS) <- c('SpVarTau', 'SpSkewTau', 'SpAutoCorTau')
+eviSpEWS1km <- resample(eviSpEWS, x, method = 'bilinear')
+eviSpEWS1km <- mask(eviSpEWS1km, mask = x$AFECTAT)
+plot(eviSpEWS1km)
+
+eviEWS <- brick('output/rasteredEWSevi2012.tif')
+eviEWS <- dropLayer(eviEWS, c(1, 2, 11, 12, 13, 14))
+names(eviEWS) <- c('ar1', 'ar1Tau', 'sd', 'sdTau', 'sk', 'skTau', 
+                       'kurt', 'kurtTau', 'densrat', 'densratTau', 
+                       'acf1', 'acf1Tau')
+evi1km <- resample(eviEWS, x, method = 'bilinear')
+evi1km <- mask(evi1km, mask = x$AFECTAT)
+plot(evi1km)
+
+```
+
+```{r complete predictor set}
+x$SpVarTau <- eviSpEWS1km$SpVarTau
+x$SpSkewnessTau <- eviSpEWS1km$SpSkewTau
+x$SpAutoCorTau <- eviSpEWS1km$SpAutoCorTau
+x$sdTau <- evi1km$sdTau
+x$skTau <- evi1km$skTau
+x$kurtTau <- evi1km$kurtTau
+x$densratTau <- evi1km$densratTau
+x$acf1Tau <- evi1km$acf1Tau
+x$ar1Tau <- evi1km$ar1Tau
+
+x$sd <- evi1km$sd
+x$sk <- evi1km$sk
+x$kurt <- evi1km$kurt
+x$densrat <- evi1km$densrat
+x$acf1 <- evi1km$acf1
+x$ar1 <- evi1km$ar1
+
+```
+
+```{r dataframe pred set}
+names(x)
+x.df <- as.data.frame(x)
+x.df02 <- (x.df)
+x.df02 <- x.df02[complete.cases(x.df02),]
+x.df02$AFECTAT[x.df02$AFECTAT == 1] <- 0
+x.df02$AFECTAT[x.df02$AFECTAT == 2] <- 1
+x.preProc <- preProcess(x.df02[, -c(1, 2, 9)], method=c("center", "scale"))
+x.df01 <- predict(x.preProc, x.df02)
+x.df01$AFECTAT <- factor(x = x.df01$AFECTAT, 
+                         levels = c(0, 1), 
+                         labels = c('not.affected', 'affected'))
+x.df01$NOMESPECIE <- factor(x = x.df01$NOMESPECIE, levels = c(1:8), labels = speciesnames)
+# split up into training & testing
+set.seed(54321)
+train_ind <- createDataPartition(x.df01$AFECTAT, p = 0.8, list = FALSE)
+train <- x.df01[train_ind, ]
+test <- x.df01[-train_ind, ]
+levels(x.df01$NOMESPECIE)
+train$wt <- ifelse(train$AFECTAT == 'affected', 2, 1)
+```
+
+```{r PCA train}
+trainEWS <- train[, c(10:18)]
+testEWS <- test[, c(10:18)]
+eviPCmodel <- prcomp(trainEWS, scale = TRUE)
+#sink(file = paste0('output', outdir, '/PCA.txt'))
+summary(eviPCmodel)
+eviPCmodel
+#sink()
+# check summary to see which PC's explain up to 95% of the variation.
+# -> reduce dimensionality and decorrelate.
+eviPCAtrain <- predict(eviPCmodel, trainEWS)
+eviPCAtest <- predict(eviPCmodel, testEWS)
+#train <- train[, -c(10:24)]
+#test <- test[, -c(10:24)]
+train$PC1 <- eviPCAtrain[, 1]
+train$PC2 <- eviPCAtrain[, 2]
+train$PC3 <- eviPCAtrain[, 3]
+train$PC4 <- eviPCAtrain[, 4]
+train$PC5 <- eviPCAtrain[, 5]
+train$PC6 <- eviPCAtrain[, 6]
+
+test$PC1 <- eviPCAtest[, 1]
+test$PC2 <- eviPCAtest[, 2]
+test$PC3 <- eviPCAtest[, 3]
+test$PC4 <- eviPCAtest[, 4]
+test$PC5 <- eviPCAtest[, 5]
+test$PC6 <- eviPCAtest[, 6]
+
+```
+
+```{r model basic}
+# basic model see Chaparro et al. 2016
+summary(train$NOMESPECIE)
+model.basic <- glm(formula = AFECTAT ~ NOMESPECIE+RAD_ANY+PREC_ANY+AT_ESTIU
+                   +SPI_AGO_3+SPI_AGO_12+SMOS_TARDA
+                   +NOMESPECIE*AT_ESTIU+NOMESPECIE*SPI_AGO_3
+                   +NOMESPECIE*SPI_AGO_12+NOMESPECIE*SMOS_TARDA, 
+                   data = train, na.action = na.omit, family = binomial(link = "logit"),
+                   weights = wt)
+fitted.probs <- predict(model.basic, newdata = test, type = 'response')
+fitted.results <- ifelse(fitted.probs > 0.5, 1, 0)
+fitted.results <- factor(x = fitted.results, 
+                         levels = c(0, 1), 
+                         labels = c('not.affected', 'affected'))
+misClasificError <- mean(fitted.results != test$AFECTAT)
+#sink(file = paste0('output', outdir, '/logRBasic.txt'))
+summary(model.basic)
+anova(model.basic, test = 'Chisq')
+paste("Deviance explained: ", 1 - (model.basic$deviance/model.basic$null.deviance))
+confusionMatrix(fitted.results, test$AFECTAT, positive = 'affected')
+paste('Accuracy', 1 - misClasificError)
+#sink()
+rm(fitted.probs, fitted.results, misClasificError)
+
+```
+
+```{r model basoic + acf1}
+model.basic <- glm(formula = AFECTAT ~ NOMESPECIE+RAD_ANY+PREC_ANY+AT_ESTIU
+                   +SPI_AGO_3+SPI_AGO_12+SMOS_TARDA
+                   +NOMESPECIE*AT_ESTIU+NOMESPECIE*SPI_AGO_3
+                   +NOMESPECIE*SPI_AGO_12+NOMESPECIE*SMOS_TARDA
+                   +acf1Tau+acf1Tau*NOMESPECIE, 
+                   data = train, na.action = na.omit, family = binomial(link = "logit"),
+                   weights = wt)
+fitted.probs <- predict(model.basic, newdata = test, type = 'response')
+fitted.results <- ifelse(fitted.probs > 0.5, 1, 0)
+fitted.results <- factor(x = fitted.results, 
+                         levels = c(0, 1), 
+                         labels = c('not.affected', 'affected'))
+misClasificError <- mean(fitted.results != test$AFECTAT)
+#sink(file = paste0('output', outdir, '/logRBasic.txt'))
+summary(model.basic)
+anova(model.basic, test = 'Chisq')
+paste("Deviance explained: ", 1 - (model.basic$deviance/model.basic$null.deviance))
+confusionMatrix(fitted.results, test$AFECTAT, positive = 'affected')
+paste('Accuracy', 1 - misClasificError)
+#sink()
+rm(fitted.probs, fitted.results, misClasificError)
+
+```
+
+```{r basic model + ar1}
+model.basic <- glm(formula = AFECTAT ~ NOMESPECIE+RAD_ANY+PREC_ANY+AT_ESTIU
+                   +SPI_AGO_3+SPI_AGO_12+SMOS_TARDA
+                   +NOMESPECIE*AT_ESTIU+NOMESPECIE*SPI_AGO_3
+                   +NOMESPECIE*SPI_AGO_12+NOMESPECIE*SMOS_TARDA
+                   +ar1Tau+ar1Tau*NOMESPECIE, 
+                   data = train, na.action = na.omit, family = binomial(link = "logit"),
+                   weights = wt)
+fitted.probs <- predict(model.basic, newdata = test, type = 'response')
+fitted.results <- ifelse(fitted.probs > 0.5, 1, 0)
+fitted.results <- factor(x = fitted.results, 
+                         levels = c(0, 1), 
+                         labels = c('not.affected', 'affected'))
+misClasificError <- mean(fitted.results != test$AFECTAT)
+#sink(file = paste0('output', outdir, '/logRBasic.txt'))
+summary(model.basic)
+anova(model.basic, test = 'Chisq')
+paste("Deviance explained: ", 1 - (model.basic$deviance/model.basic$null.deviance))
+confusionMatrix(fitted.results, test$AFECTAT, positive = 'affected')
+paste('Accuracy', 1 - misClasificError)
+#sink()
+rm(fitted.probs, fitted.results, misClasificError)
+
+```
+
+```{r basic model + sd}
+model.basic <- glm(formula = AFECTAT ~ NOMESPECIE+RAD_ANY+PREC_ANY+AT_ESTIU
+                   +SPI_AGO_3+SPI_AGO_12+SMOS_TARDA
+                   +NOMESPECIE*AT_ESTIU+NOMESPECIE*SPI_AGO_3
+                   +NOMESPECIE*SPI_AGO_12+NOMESPECIE*SMOS_TARDA
+                   +sdTau+sdTau*NOMESPECIE, 
+                   data = train, na.action = na.omit, family = binomial(link = "logit"),
+                   weights = wt)
+fitted.probs <- predict(model.basic, newdata = test, type = 'response')
+fitted.results <- ifelse(fitted.probs > 0.5, 1, 0)
+fitted.results <- factor(x = fitted.results, 
+                         levels = c(0, 1), 
+                         labels = c('not.affected', 'affected'))
+misClasificError <- mean(fitted.results != test$AFECTAT)
+#sink(file = paste0('output', outdir, '/logRBasic.txt'))
+summary(model.basic)
+anova(model.basic, test = 'Chisq')
+paste("Deviance explained: ", 1 - (model.basic$deviance/model.basic$null.deviance))
+confusionMatrix(fitted.results, test$AFECTAT, positive = 'affected')
+paste('Accuracy', 1 - misClasificError)
+#sink()
+rm(fitted.probs, fitted.results, misClasificError)
+
+```
+
+```{r basic model + sk}
+model.basic <- glm(formula = AFECTAT ~ NOMESPECIE+RAD_ANY+PREC_ANY+AT_ESTIU
+                   +SPI_AGO_3+SPI_AGO_12+SMOS_TARDA
+                   +NOMESPECIE*AT_ESTIU+NOMESPECIE*SPI_AGO_3
+                   +NOMESPECIE*SPI_AGO_12+NOMESPECIE*SMOS_TARDA
+                   +skTau+skTau*NOMESPECIE, 
+                   data = train, na.action = na.omit, family = binomial(link = "logit"),
+                   weights = wt)
+fitted.probs <- predict(model.basic, newdata = test, type = 'response')
+fitted.results <- ifelse(fitted.probs > 0.5, 1, 0)
+fitted.results <- factor(x = fitted.results, 
+                         levels = c(0, 1), 
+                         labels = c('not.affected', 'affected'))
+misClasificError <- mean(fitted.results != test$AFECTAT)
+#sink(file = paste0('output', outdir, '/logRBasic.txt'))
+summary(model.basic)
+anova(model.basic, test = 'Chisq')
+paste("Deviance explained: ", 1 - (model.basic$deviance/model.basic$null.deviance))
+confusionMatrix(fitted.results, test$AFECTAT, positive = 'affected')
+paste('Accuracy', 1 - misClasificError)
+#sink()
+rm(fitted.probs, fitted.results, misClasificError)
+
+```
+
+
+```{r basic model + kurt}
+model.basic <- glm(formula = AFECTAT ~ NOMESPECIE+RAD_ANY+PREC_ANY+AT_ESTIU
+                   +SPI_AGO_3+SPI_AGO_12+SMOS_TARDA
+                   +NOMESPECIE*AT_ESTIU+NOMESPECIE*SPI_AGO_3
+                   +NOMESPECIE*SPI_AGO_12+NOMESPECIE*SMOS_TARDA
+                   +kurtTau+kurtTau*NOMESPECIE, 
+                   data = train, na.action = na.omit, family = binomial(link = "logit"),
+                   weights = wt)
+fitted.probs <- predict(model.basic, newdata = test, type = 'response')
+fitted.results <- ifelse(fitted.probs > 0.5, 1, 0)
+fitted.results <- factor(x = fitted.results, 
+                         levels = c(0, 1), 
+                         labels = c('not.affected', 'affected'))
+misClasificError <- mean(fitted.results != test$AFECTAT)
+#sink(file = paste0('output', outdir, '/logRBasic.txt'))
+summary(model.basic)
+anova(model.basic, test = 'Chisq')
+paste("Deviance explained: ", 1 - (model.basic$deviance/model.basic$null.deviance))
+confusionMatrix(fitted.results, test$AFECTAT, positive = 'affected')
+paste('Accuracy', 1 - misClasificError)
+#sink()
+rm(fitted.probs, fitted.results, misClasificError)
+
+```
+
+
+```{r basic model + densrat}
+model.basic <- glm(formula = AFECTAT ~ NOMESPECIE+RAD_ANY+PREC_ANY+AT_ESTIU
+                   +SPI_AGO_3+SPI_AGO_12+SMOS_TARDA
+                   +NOMESPECIE*AT_ESTIU+NOMESPECIE*SPI_AGO_3
+                   +NOMESPECIE*SPI_AGO_12+NOMESPECIE*SMOS_TARDA
+                   +densratTau+densratTau*NOMESPECIE, 
+                   data = train, na.action = na.omit, family = binomial(link = "logit"),
+                   weights = wt)
+fitted.probs <- predict(model.basic, newdata = test, type = 'response')
+fitted.results <- ifelse(fitted.probs > 0.5, 1, 0)
+fitted.results <- factor(x = fitted.results, 
+                         levels = c(0, 1), 
+                         labels = c('not.affected', 'affected'))
+misClasificError <- mean(fitted.results != test$AFECTAT)
+#sink(file = paste0('output', outdir, '/logRBasic.txt'))
+summary(model.basic)
+anova(model.basic, test = 'Chisq')
+paste("Deviance explained: ", 1 - (model.basic$deviance/model.basic$null.deviance))
+confusionMatrix(fitted.results, test$AFECTAT, positive = 'affected')
+paste('Accuracy', 1 - misClasificError)
+#sink()
+rm(fitted.probs, fitted.results, misClasificError)
+
+```
+
+
+```{r basic model + spVar}
+model.basic <- glm(formula = AFECTAT ~ NOMESPECIE+RAD_ANY+PREC_ANY+AT_ESTIU
+                   +SPI_AGO_3+SPI_AGO_12+SMOS_TARDA
+                   +NOMESPECIE*AT_ESTIU+NOMESPECIE*SPI_AGO_3
+                   +NOMESPECIE*SPI_AGO_12+NOMESPECIE*SMOS_TARDA
+                   +SpVarTau+SpVarTau*NOMESPECIE, 
+                   data = train, na.action = na.omit, family = binomial(link = "logit"),
+                   weights = wt)
+fitted.probs <- predict(model.basic, newdata = test, type = 'response')
+fitted.results <- ifelse(fitted.probs > 0.5, 1, 0)
+fitted.results <- factor(x = fitted.results, 
+                         levels = c(0, 1), 
+                         labels = c('not.affected', 'affected'))
+misClasificError <- mean(fitted.results != test$AFECTAT)
+#sink(file = paste0('output', outdir, '/logRBasic.txt'))
+summary(model.basic)
+anova(model.basic, test = 'Chisq')
+paste("Deviance explained: ", 1 - (model.basic$deviance/model.basic$null.deviance))
+confusionMatrix(fitted.results, test$AFECTAT, positive = 'affected')
+paste('Accuracy', 1 - misClasificError)
+#sink()
+rm(fitted.probs, fitted.results, misClasificError)
+
+```
+
+
+```{r basic model + spSkew}
+model.basic <- glm(formula = AFECTAT ~ NOMESPECIE+RAD_ANY+PREC_ANY+AT_ESTIU
+                   +SPI_AGO_3+SPI_AGO_12+SMOS_TARDA
+                   +NOMESPECIE*AT_ESTIU+NOMESPECIE*SPI_AGO_3
+                   +NOMESPECIE*SPI_AGO_12+NOMESPECIE*SMOS_TARDA
+                   +SpSkewnessTau+SpSkewnessTau*NOMESPECIE, 
+                   data = train, na.action = na.omit, family = binomial(link = "logit"),
+                   weights = wt)
+fitted.probs <- predict(model.basic, newdata = test, type = 'response')
+fitted.results <- ifelse(fitted.probs > 0.5, 1, 0)
+fitted.results <- factor(x = fitted.results, 
+                         levels = c(0, 1), 
+                         labels = c('not.affected', 'affected'))
+misClasificError <- mean(fitted.results != test$AFECTAT)
+#sink(file = paste0('output', outdir, '/logRBasic.txt'))
+summary(model.basic)
+anova(model.basic, test = 'Chisq')
+paste("Deviance explained: ", 1 - (model.basic$deviance/model.basic$null.deviance))
+confusionMatrix(fitted.results, test$AFECTAT, positive = 'affected')
+paste('Accuracy', 1 - misClasificError)
+#sink()
+rm(fitted.probs, fitted.results, misClasificError)
+
+```
+
+
+```{r basic model + spAutoCor}
+model.basic <- glm(formula = AFECTAT ~ NOMESPECIE+RAD_ANY+PREC_ANY+AT_ESTIU
+                   +SPI_AGO_3+SPI_AGO_12+SMOS_TARDA
+                   +NOMESPECIE*AT_ESTIU+NOMESPECIE*SPI_AGO_3
+                   +NOMESPECIE*SPI_AGO_12+NOMESPECIE*SMOS_TARDA
+                   +SpAutoCorTau+SpAutoCorTau*NOMESPECIE, 
+                   data = train, na.action = na.omit, family = binomial(link = "logit"),
+                   weights = wt)
+fitted.probs <- predict(model.basic, newdata = test, type = 'response')
+fitted.results <- ifelse(fitted.probs > 0.5, 1, 0)
+fitted.results <- factor(x = fitted.results, 
+                         levels = c(0, 1), 
+                         labels = c('not.affected', 'affected'))
+misClasificError <- mean(fitted.results != test$AFECTAT)
+#sink(file = paste0('output', outdir, '/logRBasic.txt'))
+summary(model.basic)
+anova(model.basic, test = 'Chisq')
+paste("Deviance explained: ", 1 - (model.basic$deviance/model.basic$null.deviance))
+confusionMatrix(fitted.results, test$AFECTAT, positive = 'affected')
+paste('Accuracy', 1 - misClasificError)
+#sink()
+rm(fitted.probs, fitted.results, misClasificError)
+
+```
+
+
+```{r basic model + PCA}
+model.basic <- glm(formula = AFECTAT ~ NOMESPECIE+RAD_ANY+PREC_ANY+AT_ESTIU
+                   +SPI_AGO_3+SPI_AGO_12+SMOS_TARDA
+                   +NOMESPECIE*AT_ESTIU+NOMESPECIE*SPI_AGO_3
+                   +NOMESPECIE*SPI_AGO_12+NOMESPECIE*SMOS_TARDA
+                   +PC1+PC1*NOMESPECIE+PC2+PC2*NOMESPECIE
+                   +PC3+PC3*NOMESPECIE+PC4+PC4*NOMESPECIE+PC5+PC5*NOMESPECIE
+                   +PC6+PC6*NOMESPECIE, 
+                   data = train, na.action = na.omit, family = binomial(link = "logit"),
+                   weights = wt)
+fitted.probs <- predict(model.basic, newdata = test, type = 'response')
+fitted.results <- ifelse(fitted.probs > 0.5, 1, 0)
+fitted.results <- factor(x = fitted.results, 
+                         levels = c(0, 1), 
+                         labels = c('not.affected', 'affected'))
+misClasificError <- mean(fitted.results != test$AFECTAT)
+#sink(file = paste0('output', outdir, '/logRBasic.txt'))
+summary(model.basic)
+anova(model.basic, test = 'Chisq')
+paste("Deviance explained: ", 1 - (model.basic$deviance/model.basic$null.deviance))
+confusionMatrix(fitted.results, test$AFECTAT, positive = 'affected')
+paste('Accuracy', 1 - misClasificError)
+#sink()
+rm(fitted.probs, fitted.results, misClasificError)
+
+```
+

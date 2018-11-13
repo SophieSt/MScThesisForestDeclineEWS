@@ -1,0 +1,203 @@
+\documentclass[a4paper]{article}   	
+
+\usepackage[toc,page]{appendix}
+\usepackage{graphicx}
+\usepackage{subcaption}				
+\usepackage{siunitx}
+\usepackage{natbib}\citestyle{asa}
+%\usepackage{mdframed}
+\usepackage[a4paper,top=3.6cm,bottom=3.6cm,left=3.8cm,right=3.6cm,marginparwidth=2cm]{geometry}
+\usepackage[section]{placeins} % keep figures in section
+\usepackage{float}
+%\usepackage{rotating}
+\usepackage{amssymb}
+\usepackage{amsmath}
+%\usepackage{csvsimple}
+\usepackage{pgfgantt}
+\usepackage{textcomp}
+\usepackage{bookmark}
+\usepackage{hyperref}
+\usepackage{titling} % Title page container
+\usepackage{wrapfig} % Picture container
+
+
+% flow chart
+\usepackage[utf8]{inputenc}
+\usepackage{tikz}
+\usetikzlibrary{shapes,arrows, positioning}
+% Define block styles
+\tikzstyle{block} = [rectangle, draw, fill=gray!20, 
+    text width=10em, text centered, rounded corners, minimum height=5em]
+\tikzstyle{line} = [draw, -latex']
+% for Chi-squared. Chi in line, not under line
+\newenvironment{qhv}{\fontfamily{qhv}\selectfont}{\par}
+
+\usepackage[automake]{glossaries}
+\makeglossaries
+\loadglsentries{glossary}
+
+\setlength{\parindent}{0ex}
+\graphicspath{{./figures/}}
+
+% probably cancel calibration
+\title{Remotely Sensed Resilience for the Prediction of Drought-Induced Forest Decline}
+\date{\today}
+\author{Sophie Christine Stuhler,\\sophie.stuhler@wur.nl}
+			
+%%%   Start Document   %%%
+\begin{document}
+\defcitealias{unepForest}{UNEP, 2010}
+\pagenumbering{roman}
+\setcounter{page}{0}
+
+\begin{titlingpage} %Title Page, different setup, no page number
+\thispagestyle{empty}
+\newgeometry{top=1.25cm,bottom=0.96cm,inner=1.91cm,outer=1.91cm,foot=0cm,includeheadfoot} 
+\begin{qhv}
+	{\Large Geo-information Science and Remote Sensing}\vspace{0.7cm}
+  
+  {\Large Thesis Report GIRS-2018-53}\vspace{0.9cm}
+  
+  \hrule\vspace{1.1cm}
+  \linespread{1}
+  {\bfseries \Large \MakeUppercase{\thetitle}\par}\vspace{0.9cm}
+  
+  %{\bfseries \itshape (Subtitle)}\vspace{2.0cm}
+  
+  % Note: Remove the ``draft'' from \includegraphics to actually include an image, and adjust the vspace (padding) if you want to use a differently sized image
+  \begin{wrapfigure}{r}{0.68\textwidth}
+    \vspace{1cm}
+    \includegraphics[height=12cm]{declineP10wins50bw4.png}
+  \end{wrapfigure}
+  
+  {\Large \theauthor}\vspace{8.0cm}
+  
+  \rotatebox{90}{\Large \thedate}\vspace{1cm}
+  
+  % This is the vector version of the new WUR logo; due to layout changes it visually looks larger than the old one
+  \sloppypar{\hspace{-2cm}\includegraphics[width=12cm]{title/WUR_RGB_standard}}
+  
+  % Note: this image is not stretched out like it is in the MS Word template
+  \sloppypar{\noindent\makebox[\textwidth]{\hspace*{\dimexpr\evensidemargin-\oddsidemargin}\includegraphics[width=\paperwidth]{title/image2}}}
+\end{qhv}
+\end{titlingpage}
+
+\newgeometry{top=3.6cm,bottom=3.6cm,left=3.8cm,right=3.6cm,marginparwidth=2cm} 
+\thispagestyle{plain} % Subsequent page margins
+\newpage\null
+
+\newpage
+\begin{titlepage} %Title Page, different setup, no page number
+
+  % Note: this uses the MS Word template margins, you might want to increase them a bit for printing (e.g. inner=1.91cm,outer=1.91cm)
+  %\thispagestyle{empty}
+  \thispagestyle{plain} % Subsequent page margins
+  \pagestyle{plain}
+  \setcounter{page}{2}
+
+  \begin{center}
+  {\bfseries \Large \thetitle}\vspace{0.9cm}
+  
+  %{\bfseries \itshape Subtitle}\vspace{2.7cm}
+  
+  {\Large \theauthor}\vspace{0.9cm}
+  
+  {Registration number 92 04 30 815 070}\vspace{3.5cm}
+  
+  {\large \underline{Supervisors}:}\vspace{1.1cm}
+  
+  {Jan Verbesselt}\\
+  {(Geo-Information Science \& Remote Sensing, WUR)}\vspace{0.5cm}
+  
+  {Arie Staal}\\
+  {(Aquatic Ecology \& Water Quality Management, WUR)}\vspace{3.5cm}
+  
+  {A thesis submitted in partial fulfillment of the degree of Master of Science}
+  
+  {at Wageningen University and Research,}
+  
+  {The Netherlands.}\vspace{1.1cm}
+  \end{center}
+  
+  \begin{flushright}
+    {\thedate}
+  
+    {Wageningen, The Netherlands}
+  \end{flushright}\vspace{0.5cm}
+
+    Thesis code number: GRS-80436
+  
+    Thesis Report: GIRS-2018-53
+  
+    {Wageningen University and Research Centre}
+  
+    {Laboratory of Geo-Information Science and Remote Sensing}
+    
+\end{titlepage}    
+\newpage\null\setcounter{page}{3}
+
+\newpage
+\input{chapters/abstract}
+
+\newpage
+\input{chapters/foreword}
+
+\newpage % Table of Contents
+\setcounter{page}{6}
+\tableofcontents
+
+\newpage
+\listoffigures
+
+\newpage
+\listoftables
+
+\newpage % Main Body
+\pagenumbering{arabic}
+\setcounter{page}{1}
+
+\input{chapters/intro}	
+
+\newpage
+\input{chapters/problem}
+
+\newpage
+\input{chapters/rq}
+
+\newpage
+\input{chapters/theory}
+
+\newpage
+\input{chapters/methods}
+
+\newpage
+\input{chapters/results}
+
+\newpage
+\input{chapters/discussion}
+
+\newpage
+\input{chapters/conclusion}
+
+
+	
+\newpage % Glossary
+\clearpage
+\addcontentsline{toc}{section}{Glossary}\label{glossary}
+\printglossaries
+\newpage % References
+\addcontentsline{toc}{section}{References}
+\bibliographystyle{abbrvnat}
+\bibliography{./chapters/ews_forestdecline}
+
+\newpage
+\begin{appendices}
+%\input{chapters/ewsimagesNDVIApp}
+%\newpage
+\input{chapters/ewsimagesNDMIApp}
+\newpage
+\input{chapters/ewsimagesEVIApp}
+\newpage
+\input{chapters/interactions}
+\end{appendices}
+\end{document}

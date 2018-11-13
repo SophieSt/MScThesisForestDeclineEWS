@@ -1,0 +1,110 @@
+% results
+\section{Results}\label{results}
+The following section will visualize and describe the results. The order follows the research questions.
+
+\subsection{Preprocessing \& Data Quality}\label{res_preproc}
+The removal of observations with low quality flags usually resulted in less than five observations per pixel in a time series being masked out. These mostly affected larger areas due to sensor malfunctioning, cloud coverage, or snow. Sensor malfunctioning was observed in the SWIR-band during the first year of operation in a global extent and was confirmed by random checks of time series in different ecozones and continents within the Viewer of Google Earth Engine (for plots see the folder \textit{supportingMaterial} in the github repository \url{https://github.com/SophieSt/MScThesisForestDeclineEWS}. Removal of subsequent time steps due to cloud coverage or snow was rare and only occurred in higher lying pixels of the Pyrenees. Regular time series were successfully extracted and NDMI calculated. The replacement of missing values in the beginning or end of the time series with the subsequent value assured that no extrapolation or stretching of the time series took place. Observations from the end of the year showed higher numbers of missing values. One time step at the end of the year 2000 lacked data in a wide area over Eastern Catalonia. Figure \ref{res:no_NA} gives an overview of the amount of missing values for each time step where the mentioned anomaly of fall/winter 2000 refers to the first peak of over 5\% missing data. A seasonality of missing values with high observation density in spring through summer and relatively lower density in fall and winter is persistent over the length of the time series.\\
+
+\begin{figure}[H]
+	\centering
+	\makebox[\textwidth][c]{\includegraphics[trim = 10 25 40 50, clip, width = 1.1\textwidth]{no_na_timestep.pdf}}
+	\caption{Percentage of missing values per timestep as the number of missing values over the number of pixels in the study area given in percentage.}\label{res:no_NA}
+\end{figure}
+
+
+\subsection{Sensitivity Analysis}\label{res_sensit}
+The parameter setting for the extraction of the EWS was visually assessed with heatmaps of the trend estimate of ACF(1) as a representative EWS of 15 pixels that were affected by forest decline in 2012 and 15 that were not (see figure \ref{res:sensit_points}). These 30 points were selected with a stratified random sampling from the \textit{raster} package to ensured an independent sample of pixel time series of both classes.\\
+
+\begin{figure}[ht]
+	\centering
+	\makebox[\textwidth][c]{\includegraphics[width = 1.1\textwidth]{ForestDeclines2012.png}}
+	\caption{Overview of the forest extent in Catalonia. Declined forests are shown in brown, unaffected ones in green. Points indicated by crosses refer to the points used in the sensitivity analysis.}\label{res:sensit_points}
+\end{figure}
+
+Bandwidth values used in the Gaussian detrending were plotted on the x-axis of the heatmaps ranging between 4 and 30, the y-axis featured the size of the rolling window given in time steps. The rolling window sizes were tested in a range of 1 through 200. Two heatmaps were produced for each point: one for the trend estimate of Kendall's $\tau$, one for its according p-value (significance level). The 30 points did not unanimously show the same patterns, but overall, they showed rather low sensitivity to the bandwidth used in detrending. This insensitivity is illustrated in figure \ref{res:sensitivity}. The horizontal banding indicates that a change in filtering bandwidth had a small effect on both the trend estimate (top row) and the respective significance (bottom row). The two left plots show pixels that were affected by forest decline, the two right ones were not affected. It should be noted that the four points were selected for visualization at this point, but the strong trend (blue and purple coloring) did not persist over the total 30 sampled points. The complete set of heatmaps can be found online in the github repository (\url{https://github.com/SophieSt/MScThesisForestDeclineEWS}). However, the striped pattern was the most dominant, general pattern.\\
+The strongest trends were found for larger rolling window sizes of about 100 to 150 time steps - an equivalent of about half the size of the time series. The detrending did not have much impact on the trend estimate as can be seen by the constant coloring for different detrending values. Small values of below 10 did however show slightly better detrending: as can be seen in figure \ref{res:detrended_time_series}, a Gaussian kernel of bandwidth~$=$~4 managed to depict most seasonality, though some pattern was still observable. Smaller values than that followed the data too closely, likely overfitting the trend.\\
+
+\subsection{Resilience Maps}\label{res_ews_maps}
+Three sets of EWS were calculated for each pixel based on its time series per vegetation index: NDVI, NDMI, and EVI. Generic EWS included the autoregressive function at lag-1, standard deviation, skewness, kurtosis, density ratio, and temporal autocorrelation at lag-1.  The largest part of the study area featured trend values of around -0.3~-~0.3 indicated by grey colors in the maps, indicating no clear trends of increased or decreased stability. Northeast of the city of Vic (eastern central Catalonia), a larger area showed consistently higher trends indicated by the red colors in the ACF(1) map (see figure \ref{res:ndvi_ews_maps}). This coincided partly with an area where several forest stands declined. Other areas featuring stronger trends in temporal autocorrelation were found in Eastern art of catalonia towards the coastal regions and coastal ranges. Again, this trend was almost similar in AR(1) and the density ratio. The overall magnitude in trend was found to be lower for spatial indicators than for generic EWS (see figure \ref{res:ndvi_ews_maps}) in the majority of the study area. No clear trends were apparent when comparing with the location of the decline areas.\\
+
+
+\newgeometry{top=2.3cm,bottom=2cm,left=2.4cm,right=2.4cm,marginparwidth=0.5cm}
+%\makebox[\textwidth][c]{
+\begin{figure}[htpb]
+	\centering
+	\includegraphics[width=\textwidth]{SensitivityAnalysis.pdf}
+	\caption{Four out of the 30 total points that were used in the sensitivity analysis. The two left plots were affected by forest decline, the two on the right side not affected. Top row represents estimates of Kendall's tau, bottom row significance level of the estimate. Filtering bandwidth on the x-axis, rolling window size in number of time steps on the y-axis of the heatmpas, coloring according to trend as Kendall's $\tau$ in ACF(1) and its significance. Small triangles indicate theoretical optimal parameter setting based on the strongest significant trend.}\label{res:sensitivity}
+\end{figure}	
+
+\begin{figure}[htpb]
+	\centering
+	\includegraphics[width=0.9\textwidth]{detrendedTimeSeries.pdf}
+	\caption{Original NDVI time series for one affected and one unaffected pixel to illustrate the effect of detrending. Black line shows the original time series, the red line depicts the modeled trend of a Gaussian kernel with bandwidth~=~4, on the right side the detrended residuals. Detrending aimed at removing seasonality and longer term trends.}\label{res:detrended_time_series}
+\end{figure}
+%}
+\restoregeometry{}
+
+
+\input{chapters/ewsimages}
+
+\newpage
+\FloatBarrier
+\subsection{Principal Component Analysis}\label{res_pca}
+Three Principal Component Analyses were carried out: one on each EWS set for each of the three vegetation indices. The input feature space of the EWS consisted of the trend statistic of nine EWS for each vegetation index: spatial variance, spatial skewness, spatial autocorrelation, standard deviation, skewness, kurtosis, density ratio, ACF(1) (temporal autocorrelation at lag-1), and AR(1) (autoregressive function at lag-1). Due to the rotation towards maximum variability, the first PC's describe the biggest fraction of variation, the last PC's usually not much more than noise. In the case at hand, the first five to six Principal Components explained by far the most variation, showing a so called elbow effect taking place after the first five Principal Components. In NDVI more variation was explained in the first Principal Components than was in NDMI and EVI.\\
+Tables \ref{res:PCA_NDVI}, \ref{res:PCA_NDMI} and \ref{res:PCA_EVI} show the loading vectors for each Principal Component. In the top row, the cumulative explained variation is given. Table \ref{res:PCA_NDVI} gives an overview of the PCA on NDVI-based indicators, table \ref{res:PCA_NDMI} of the NDMI-based indicators, and table \ref{res:PCA_EVI} shows those of EVI. The coloring refers to the association between PC and its axes: the darker the green the stronger the association.\\
+The first 6 PC's of the NDVI-based indicators explained 96\% of the variation. The first Principal Component was mainly constructed by the EWS describing autocorrelation and spectral properties (ACF(1), AR(1) and density ratio). The second PC was created from multiple EWS: generic ones like standard deviation, skewness, and kurtosis, but also spatial variance and spatial autocorrelation. The third PC uses spatial skewness, too, but not the kurtosis. PC 4, 5 and 6 were predominantly constructed by one of the spatial indicators. PC 7, 8 and 9, explained only little to no variation.\\
+The PCA on the NDMI- and EVI-based indicators were constructed in a similar way as the PCA on NDVI-based indicators, visible in the tables by the similar color pattern. For NDMI, the first six PC's explained 94\%, for EVI 93\%. These were then used to extend the null model, although they did not exactly explain 95\% of the variation yet.\\
+\newpage
+\newgeometry{top=3.22cm,bottom=2cm,left=2.4cm,right=2.4cm,marginparwidth=2cm}
+\FloatBarrier
+\begin{table}[htpb]
+	\centering
+	\includegraphics[trim=20 68 0 58, clip, width=\textwidth]{pcaNdviLoadVecs.pdf}
+	\caption{Principal Components (PCs) of trend in EWS calculated from NDVI, coloring according to the strength of the association (thus according to absolute values). Values show the loading vectors of each PC. Additional to the loading vectors, the top row gives the cumulated explained variance.}\label{res:PCA_NDVI}
+\end{table}
+
+\begin{table}[htpb]
+	\centering
+	\includegraphics[trim=20 65 0 58, clip, width=\textwidth]{pcaNdmiLoadVecs.pdf}
+	\caption{Principal Components (PCs) of trend in EWS calculated from NDVI, coloring according to the strength of the association (thus according to absolute values). Values show the loading vectors of each PC. Additional to the loading vectors, the top row gives the cumulated explained variance.}\label{res:PCA_NDMI}
+\end{table}
+
+\begin{table}[htpb]
+	\centering
+	\includegraphics[trim=20 67 0 58, clip, width=\textwidth]{pcaEviLoadVecs.pdf}
+	\caption{Principal Components (PCs) of trend in EWS calculated from NDVI, coloring according to the strength of the association (thus according to absolute values). Values show the loading vectors that of each PC. Additional to the loading vectors, the top row gives the cumulated explained variance.}\label{res:PCA_EVI}
+\end{table}
+
+\FloatBarrier
+\begin{table}[H]
+	\centering
+	\makebox[\textwidth][c]{\includegraphics[trim = 0 30 0 30, clip, width = 1.8\textwidth]{summaryLogModels.pdf}}
+	\caption{Overview of the Model Performance extended by each of the EWS and by the Principal Components. Null model from \citep{chaparro2017} extended with one of the resilience indicators and interaction with species at a time. Null dev: Null deviance of the model; Resid dev: Residual deviance; Tot Dev Expl: Percentage of Deviance Explained; addit Dev: Deviance explained by adding EWS; AIC: Akaike Information Criterion; Acc: test accuracy; sensitivity, specificity; max significance refers to the highest significance level of the EWS or the EWS interaction with one the species. Coloring according to column of model performance: darker green refers to better model fit.}\label{res:model_summaries}
+\end{table}
+\restoregeometry{}
+
+\newpage
+\subsection{Prediction \& Testing}\label{res_pred_test}
+The logistic regression model was set up based on the one published in \cite{chaparro2017}. Only one observation per pixel was used. Some pixels contained more than one set of predictors in the original data set due to presence of several declined plots within the boundaries of one pixel. \cite{chaparro2017} used a stratified random sampling approach to set up the logistic regression model and account for the unbalanced prior probabilities. Unaffected forest pixels occurred about 3.7 times more often than affected forest pixels. In this research, the complete dataset of 14,164 forested pixels was partitioned into a training and testing dataset where 80\% of the data served for training and the other 20\% were used for independently testing the model performance. In order not to further shrink the available observations used for training, weights were assigned to each observation. That is, an affected cell was weighted twice as much as an unaffected cell to still account for the unbalanced prior probabilities. The original dataset of predictors and affected/unffected cells was based on the Catalonian forest mask used at CREAF. In the research at hand, forested pixels were defined by FAO-standards within Google Earth Engine because the necessary layers were already provided in this environment. This led to a smaller extent compared to \cite{chaparro2017} with a total of only 10~535 observations. These 10,535 observations resulted in a null deviance of 5672.5, out of which 4133.7 remained unexplained by the null model. Thus, the deviance explained by the null model was about 27\%, which is less than the deviance explained by \cite{chaparro2017}.\\
+Overall, the performance of the null model was similar to the one in \cite{chaparro2017}. The deviance explained by each of the predictors differed: species still explained the largest part of the explained deviance with 62\% - 79\%. Table \ref{res:model_summaries} gives an overview of the models that were set up and the contribution of each of the Early Warning Signals (resilience indicators) to explain the occurrence of forest decline. The top row shows the null model, the rows underneath show the models consisting of the null model extended by each EWS or the Principal Components of the EWS per vegetation index. The extended models were set up by adding each of the EWS individually (incl. the interaction with species) and assessing the model by the deviance that it explained additional to the null model, the Akaike Information Criterion (AIC), and model performance on the test dataset.\\
+
+\subsubsection{Comparison among Vegetation Indices}
+The trend in autocorrelation function at lag-1 (ACF(1)), in auto-regressive function at lag-1 (AR(1)) and in density ratio showed similar explanatory power for each vegetation index and showed most predictive value when calculated from NDVI time series compared to the other vegetation indices (additional deviance explained in NDVI-based ACF(1) and density ratio of up to 71.1 of 5672.5 $=$ 1.2\%). For NDMI and EVI their added value was lower. ACF(1) from EVI was only significant at p $<$ 0.05 for \textit{Pinus sylvestris}, but not for any other species. Calculated from NDMI it was significant for all species, but showed significant interaction with \textit{Pinus sylvestris} at p $<$ 0.01.\\
+For both NDMI and EVI, the most explanatory power of an individual EWS was found for the trend in spatial EWS: Spatial variance explained 75.4 of the total deviance when calculated from NDMI, spatial autocorrelation 71.3. The trend in spatial variance in NDMI was the single most explanatory indicator. It explained 75.4 of the total 5672.5, making up for almost 1.3\% of the total deviance. Accuracy values were consistent over all models around 94.6\%, differences smaller than 0.7\% for all indicators and indices. Sensitivity and specificity were relatively consistent, too, although values for sensitivity showed a wider spread between 12.0\% and 24.1\%.\\
+Additionally, for each vegetation index (NDVI, NDMI, EVI) the Principal Components (PC's) of the EWS were added to decorrelate the EWS-feature space and still use the combined explanatory power. Note that almost all resilience indicators were significant for at least one of the abundant species, only skewness on NDMI-time series was not significant at p $<$ 0.05 for any species. Adding the PC's and their interaction with species reduced the deviance by almost three times as much as by adding the strongest individual EWS. The PC's of the NDVI-based EWS explained the biggest fraction of deviance compared to individual EWS (223.2 out of 5672.5 $=$ 3.9\%), the ones from EVI-EWS explained the least deviance (188.1 out of 5672.5 $=$ 3.3\%), calculated from NDMI explained a smaller fraction as from NDVI, but still higher than from EVI (200.5 out of 5672.5 $=$ 3.5\%).\\
+Comparing the different vegetation indices, NDVI showed both higher values for the explained deviance and lower values for significance than both NDMI and EVI. For EVI and NDVI, all EWS showed a significant contribution to explaining forest decline (at p~$<$~0.05). The models based on NDMI performed better (more significant, more deviation additionally explained) than the ones based on EVI resulting in a performance gradient: NDVI performed best, NDMI second best, and EVI the least.\\
+
+\FloatBarrier
+
+\subsubsection{Comparison among Species}
+The relationship of EWS with forest decline was both positive and negative, depending on the EWS and the species. To indicate this, table \ref{res:coeffNDVI} shows the coefficients of the two most abundant species in the study area for NDVI-based EWS: \textit{Pinus halepensis} and \textit{Quercus ilex}. NDVI is shown here as models including NDVI-based indicators performed better than those including NDMI or EVI based on AIC and deviance explained. Again, the spectral EWS, such as ACF(1), AR(1) and density ratio show similar values among coefficients and their according significance level. While an increasing temporal autocorrelation was associated with a higher probability of forest decline for \textit{Quercus ilex}, the opposite was the case for \textit{Pinus halepensis} which showed a negative association with forest decline. This was the case for ACF(1), AR(1), density ratio, and standard deviation (although not significant there), the opposite was the case for kurtosis and spatial variance. The relationship between skewness and spatial autocorrelation with forest decline was found positive for both species. Forest Decline showed negative association with spatial skewness for both species, but only significant for \textit{Quercus ilex}.\\
+
+\begin{table}[htp]
+	\centering
+	\makebox[\textwidth][c]{\includegraphics[trim = 130 440 130 50, clip, width = 0.7\textwidth]{coeffNDVI_small.pdf}}
+	\caption{Coefficients of NDVI-based EWS for the two most abundant species in the study area \textit{Pinus halepensis} and \textit{Quercus ilex}. Significance levels are reported per species. Positive coefficients indicate a positive relationship between EWS and forest decline.}\label{res:coeffNDVI}
+\end{table}
+
+
+
+

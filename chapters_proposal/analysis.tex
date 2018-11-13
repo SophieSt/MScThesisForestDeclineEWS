@@ -1,0 +1,87 @@
+\subsection{Data Analysis}\label{subsec:analysis}
+A schematic framework of the following steps can be found in figure \ref{fig:flowchart}.
+
+\begin{figure}[ht]
+	\centering
+	\includegraphics[width = 0.95\textwidth]{FlowChart_MSc_thesis}
+	\caption{A schematic framework of the proposed methods including preprocessing, predictor extraction, prediction, validation, and the indication of the research questions.}\label{fig:flowchart}
+\end{figure}	
+
+\subsubsection{Upscaling}
+Since the forests in the study area are frequently of small scale, upscaling will be a critical step in the analysis. Upscaling will make sure, that the given plots match the time series at hand. That is, that the location, mask and extent of the measured plots is well represented by its according pixels from the remote sensing data. Landsat TM pixels span an area of 30~x~30~m on the ground. If a sampled forest is smaller than this extent, the Landsat pixel will show Spectral Mixing. That is in this case the resulting signal at the sensor is mixed by the vegetation spectrum as well as the surrounding surface material. To assure that only spectrally pure pixels and those plots will go into the analysis, plots of insufficient size will be masked out by applying a threshold for the minimum size. However, for statistical and/or ecological purposes, it might be inconvenient to eliminate plots with high mortality or small extent, as we aim to describe the entire feature space of data available.
+
+
+\subsubsection{Preprocessing}
+Preprocessing will include cloud removal, NA-interpolation and the aggregation to monthly means \citep[comparable to][]{verbesselt2016} for the indices to obtain time series with equal steps and as few missing values as possible. The length of the Landsat archive will assure the time series is still sufficiently long enough for the calculation of EWS. Some EWS require log-transformation of the time series, so both the untransformed and the log-transformed time series will be used to extract EWS.
+
+
+
+\subsubsection{Predictor Extraction}
+For predicting tree mortality, several predictors will be calculated from the time series. These are all based on the theory of Early Warning Signals (EWS) of \gls{tippoint}s, that can be seen as leading indicators of \gls{resilience}. An ecosystem with high \gls{resilience} and thus low or moderate mortality will thus not be indicated by these metrics, resulting in low values for the predictors. A less resilient ecosystem with higher mortality will show indicators to rise \citep{scheffer2001, scheffer2009a, carpenter2011a, dakos2012, dakos2014}.\\
+In the following, the steps required for the extraction will be laid out.
+
+\paragraph{Detrending/Filtering:}
+Some EWS require a detrended time series \citep{dakos2012}. The detrending will aim to remove trends in the time series that might recur, but have no influence on the rise of e.g. variability or \gls{flickering}. An example for desired derending is seasonality. Filtering of outlier values, but also detrending of the time series need to be carried out carefully, as with higher order trend-differencing we might easily overfit the data \citep{dakos2008} and thus remove exactly those deviations from the equlibrium that are actually of interest, since they are the perturbations and disturbances from which we calculate the EWS.
+
+\paragraph{Window Size:}
+Typically, this is half the length of the time series \citep{dakos2012}. But in case of fast timescales of the system at hand, a shorter window length is needed (analogously for longer timescales) (ibid.). Still, smaller timescales result in less accurate estimate of the metric at use. Therefore, different window sizes will be tested for those leading indicators that are sensitive to this choice, like autocorrelation, skewness and variance.\\
+
+\paragraph{Generic metric-based EWS:}
+assume no specific model structure.
+\begin{itemize}
+	\item Autocorrelation (TAC-1) and Spectral Properties. Autocorrelation at lag-1 is the most basic indicator of CSD. It determines the correlation between a data point \textit{n} and its neighboring point \textit{n~-~1} \citep{carpenter2008}. Different metrics are proposed, all referring to the auto-regressive (AR) coefficient which is mathematically similar to the autocorrelation function. These metrics are therefore describing similar patterns of rising memory. Namely those are the auto-regressice coefficient of the AR(1) model \citep{held2004} and the return rate \citep[inverse of AR(1) coefficient][]{carpenter2008}. Further similar metrics, that account for correlation in higher lags, that is rising memory will be observed in socalled spectral reddening, are subsumed under the term spectral properties. They derive the EWS from the power spectrum. EWS are spectral density \citep{kleinen2003}, spectral exponent \citep{dakos2012}, and spectral ratio of low to high frequencies \citep{biggs2009}.
+	\item Detrended Fluctuation Analysis (DFA). DFA detects an increase in short- and mid-term 'memory', but also requires min 100 data points for robust estimation. The DFA indicator requires rescaling of the DFA fluctuation exponent and is usually estimated in time ranges between 10 and 100 time units \citep{livina2007}. It reaches 1 at the moment of the critical transition.
+	\item Variance by Standard Deviation (StDev) and Coefficient of Variation (CV). Based on the observation that close to a transition slowing down, \gls{flickering} or both can be observed. Both of these phenomena can be captured by StDev and the CV. They both describe the fluctuation around the mean, that is they quantify the deviation from the stable state \citep{carpenter2006}.
+	\item Skewness and Kurtosis. Close to a transition, we observe slow dynamics \citep{scheffer2009b}. Skewness measures the symmetry of a dataset, slow dynamics will result in a left- or right-skewed distribution \citep{guttal2008}. It is defined as the third moment around the distribution's mean. Depending on whether the alternative state is larger or smaller than the present one, skewness will become postive or negative \citep{dakos2012}. Kurtosis describes the deviation from normal distribution in \textit{y}-direction. In other words it describes whether the slopes of the peak of a distribution are steeper or less steep than the ones of a normal distribution and is hence mathematically defined as the fourth moment around the distribution's mean. In case of a transition we expect the tails of the time series to become fatter \citep{biggs2009}, that is the distribution becomes leptokurtic because rare values will occur more frequently \citep{dakos2012}.
+	\item Conditional Heteroskedasticity (CH). Heteroskedasticity in contrast to homoskedasticity describes that the variance within residuals is equal over all values of \textit{x}, or in our case over all time steps. Conditional heteroskedasticity thus refers to a positive relationship of the variance within small time steps: Periods of high variability tend to follow periods of low variability \citep{seekell2011}. It is usually calculated by fitting an autoregressive model of selected order based on e.g. the Akaike Information Criterion (AIC) and looking at the self-regressed squared residuals at lag-1. If the slope of this linear regression is then larger than 0, conditional heteroskedasticity is present. Its significance can further be quantified by comparing the coefficient of determination \textit{r}\textsuperscript{2} with a $\rchi$\textsuperscript{2} distribution of \textit{df~=~1} \citep{dakos2012}. Significance will rise close to the transition. Nevertheless, increasing noise might lead to an overestimation of CH at longer rolling windows. Therefore, this particular metric requires special attention on the size of the rolling window and the according interpretation \citep{seekell2011}.
+	\item BDS test (after the initials of its authors W. A. Brock, W. Dechert and J. Scheinkman. The BDS test assesses the null hypothesis of independent and identically distributed residuals (i.i.d.) after fitting any linear model (e.g. ARMA(p,q), ARCH(q), GARCH(p,q) models) to the time series \citep{broock1996}. That is, it tests if there is still remaining structure in the time series like hidden nonlinearity, hidden nonstationarity or other missed trends and structures \citep{carpenter2011a}. It is not as such an indicator, but is listed here since it can be used to avoid False Positives that might originate in model misspecification \citep{dakos2012}. True Positives, i.e. the actual approaching of a transition, would reject the i.i.d. null hypothesis. In this way, the BDS test can suppport the identification of a \gls{tippoint}.
+\end{itemize}
+
+%\newpage
+\paragraph{Generic model-based EWS:}
+fit model based on following equation:  % equation insert
+
+\begin{equation}\label{eq:modelews}
+	dx = f(x, \theta )dt + g(x, \theta )dW
+\end{equation}
+
+\begin{itemize}
+	\item Non-parametric drift-diffusion-jump models (DDJ). By fitting a general model, we can approximate nonlinear processes without an explicit equation definition \citep{carpenter2011b}. DDJ breaks down to separating drift as the local rate of change, diffusion as the relatively small shocks at each time step and jumps as intermittent shocks. This model can then be used to estimate the unknown underlying process that generates the time series. Each of the three statitistics (drift, diffusion and jump) can be regarded as an individual indicator (or predictor) in the further analysis \citep{dakos2012}. % more
+	\item Time-varying AR(p) models. This metric fits an autoregressive (AR) model to the time series. In contrast to a time-invariant AR(p) (\textit{cf.} above, TAC and Spectral Properties), the characteristic root $\lambda$ resembles the dominant eigenvalue of the Jacobian matrix at a stationary point in a deterministic discrete time-model \citep{held2004}. In time-varying AR(p) models allow the characteritsic root to change over time and therefore describe the change of coefficients on the model over time \citep{ives2012}.
+	\item Threshold AR(p) models. These models aim at identifying \gls{flickering} in a time series. \Gls{flickering} is the quick and temporary shifting between alternating basins of attraction \citep{scheffer2009b}. These alternating systems are translated into two AR(p) models with separate sets of coefficients \citep{ives2012}.
+	\item Potential analysis. Just like threshold AR(p) models, potential analysis aims to identify \gls{flickering} between alternating regimes. Individual states are called wells and identified within a rolling window of up to half the length of the time series \citep{livina2010}.
+\end{itemize}
+
+\paragraph{Spatial EWS:}
+Many environmental processes exhibit spatial patterns. Spatial Early Warning Signals are based on the assumption that in the approaching of a critical transition systems become increasingly spatially homogeneous, and thus spatially correlated \citep{kefi2014}. Spatial EWS can therefore include the temporal component in spatial autocorrelation, Fourier transformed power spectrum and similar to generic EWS variance and skewness as well, though here calculated on pixel distribution. The choice of the spatial EWS depends on the presence or absence of specific spatial patterns. Patterns like periodicitiy, anisotropy, and patchiness need to be evaluated for the case at hand. Hence, it cannot be determined at this stage, which one of them will be used.
+
+
+
+
+\paragraph{Trend Quantification:}
+Kendall's $\tau$ rank correlation coefficient will be used for testing against the null hypothesis of randomness of the measurements against time \citep{dakos2012}. Alternatively Spearman's $\rho$ rank correlation or Pearson's correlation coefficient would both also be possible. However, for time series anayses and early warning signals Kendall's $\tau$ is the dominant measure at use.
+
+\paragraph{Sensitivity Analysis:}
+To identify which measure and where applicable which window size yields the best result, a sensitivity analysis will be carried out \citep{dakos2012}. \\
+%try rangeof window sizes and - if applicable - different kernel sizes for Gaussian filtering\\
+
+
+%\FloatBarrier
+\subsubsection{Prediction}
+The response variable tree mortality is a quantitative variable with a defined range. It describes the ratio of trees within a given area that are dead, thus the range of 0~-~100\%. It is thus given in percentage. A variety of methods exists to predict a quantitative variable, the most basic one being linear regression. The choice of model depends on the assumed underlying mechanism, i.e. the relationship between response variable and predictors (explanatory variables). If the relationship is in any way linear, then a linear regression is appropriate. This can also mean, that the relationship is not obviously linear, but might be after e.g. a Principal Component Analysis (PCA). In that case, a Principal Component Regression (PCR) can be applied based on a subset of Principal Components. Linear Regression is relatively easy to interpret as it describes the relationship between a set of predictors with the response variable based on intercept $\alpha$ and slopes $\beta\textsubscript{1,...,n}$ for the predictors. An increase of 1 unit in predictor \textit{p\textsubscript{1}} leads to an increase in the response variable of $\beta\textsubscript{1}$ units of the response variable. Other models like Support Vector Machines or Random Forests split up the feature space to according output and require more knowledge on the parameter setting and are thus more difficult to set up and interpret. But due to their flexibility they also tend to yield very accurate results when data availability is high and the main interest is model performance and less on interpretability or the unveiling of processes.\\
+The model of choice is yet to be determined based on the outcome of the EWS derivation. One option could be Random Forests. They were first described by \citeauthor{breiman1999} in \citeyear{breiman1999} as ensembles of decision trees \citep{breiman1999}. Random Forests can deal with multicollinearity in the predictor space and yield accurate results in a variety of settings. They perform Machine Learning through the combination of multiple identical or different models. Those are applied to the same data with the aim to increase and profit from high accuracy and minimize weaknesses \citep{rodriguez2012}.\\
+As a multitude of EWS will be calculated as predictors and many of them might be correlated, linear regression would pose a multicollinearity problem. The expected relationship of tree mortality with the predictors might very well be positive: for instance an increase in TAC might indicate higher mortality. But the addition of a linear relationship between another EWS and mortality might not support the analysis. Random Forests in contrast can easily deal with such a situation due to votes and splits. The interpretation of the model results however will mostly be done on variable importance. Though, other models like PCR might work comparably well while being easier to interpret. To assess the performance of the different types of EWS, several models will be fitted to the data. The choice is thus yet to be determined.\\
+
+
+
+\subsubsection{Validation}
+The dataset will be split into a training and a validation dataset. The training dataset will be used to set up and train the model. The validation dataset will be used to independently assess the performance of the model. If the amount of plots is not very large, Cross-Validation will be performed. Since the response variable is quantitative (percentages), this will include the respective bias, variance, and correlation by comparing the predicted tree mortality with the observed tree mortality. I will further assess differences of the model performance per forest type to see if a different forest structure exhibits different \gls{resilience} patterns.\\
+
+
+%\subsubsection{Linking EWS to ecological processes}
+%Depending on the model choice different EWS can be assessed as important or significant. Random Forests assess the variable importance of each predictor within the model. In regression problem settings, each predictor is given a slope/coefficient, that is the strength of the direct impact of a change in the corresping variable, and its according significance level. Literature based on individual trees' responses \citep[e.g.][]{brauning2017, sass2016} will help to give insight what the ecological drivers in the model are and explain the most important/strongest predictors in respect to processes on the ground.
+
+
+\subsection{Software}
+Remote Sensing data will be searched on Google Earth Engine and filtered for clouded pixels. Calculation of the above described indices will also be perfomed on Google Earth Engine. Indices as bands of image collections will then be exported and loaded into R for further time series analyses with packages \textit{earlywarnings} \citep{earlywarnr} and \textit{spatialwarnings} \citep{spwarnr}.
+

@@ -1,0 +1,129 @@
+\documentclass[a4paper]{article}   	
+
+\usepackage{graphicx}
+\usepackage{subcaption}				
+\usepackage{siunitx}
+\usepackage{natbib}\citestyle{egu}
+%\usepackage{mdframed}
+\usepackage[a4paper,top=2.7cm,bottom=2.7cm,left=3.7cm,right=3.7cm,marginparwidth=2cm]{geometry}
+\usepackage[section]{placeins} % keep figures in section
+\usepackage{float}
+%\usepackage{rotating}
+\usepackage{amssymb}
+\usepackage{amsmath}
+%\usepackage{csvsimple}
+\usepackage{pgfgantt}
+\usepackage{textcomp}
+
+% flow chart
+\usepackage[utf8]{inputenc}
+\usepackage{tikz}
+\usetikzlibrary{shapes,arrows, positioning}
+% Define block styles
+\tikzstyle{block} = [rectangle, draw, fill=gray!20, 
+    text width=10em, text centered, rounded corners, minimum height=5em]
+\tikzstyle{line} = [draw, -latex']
+% for Chi-squared. Chi in line, not under line
+\DeclareRobustCommand{\rchi}{{\mathpalette\irchi\relax}}
+\newcommand{\irchi}[2]{\raisebox{\depth}{$#1\chi$}} % inner command, used by \rchi
+
+\usepackage[automake]{glossaries}
+\makeglossaries
+\loadglsentries{glossary}
+
+\setlength{\parindent}{0ex}
+%\graphicspath{{./graphics/}}
+
+% probably cancel calibration
+\title{Remotely Sensed Early Warning Signals for Predicting Drought-Induced Tree Mortality\\
+\bigskip
+\large{Thesis in partial fulfillment of the degree Master of Science\\
+at Wageningen University \& Research}\\
+\smallskip
+\large{Proposal}}
+\date{\today}
+\author{Sophie C. Stuhler,\\sophie.stuhler@wur.nl}
+			
+%%%   Start Document   %%%
+\begin{document}
+
+
+\begin{titlepage} %Title Page, different setup, no page number
+	\clearpage
+	\vspace{7cm}
+	\maketitle %Title, Subtitle, Author, Date
+	% Nice Eyecatcher
+	\vspace{5mm}
+	%\begin{figure}[htbp] 
+	\begin{center}
+	%	\centering
+		%\begin{subfigure}[a]{.3\textwidth}
+		\resizebox{.75\textwidth}{!}{
+			\includegraphics[height=3cm]{ASTER_sat_for_peloponnesos.jpg}
+			% from https://earthzine.org/2012/06/11/teaming-drought-with-wildfires-eu-researchers-suggest-new-data-for-forest-weather-index/  Credit: NASA/GSFC/METI/Japan Space Systems, and U.S./Japan ASTER Science Team.
+		%\end{subfigure}
+		%\quad
+		%\begin{subfigure}[b]{.3\textwidth}
+			%\includegraphics[height=3cm]{treerings.jpg}
+			% from https://i.pinimg.com/originals/16/ee/3e/16ee3ee3fb41db15607d0ca1522a1cb2.png
+			% Pinterest
+			}
+		%\end{subfigure}
+	\end{center}
+%	\end{figure}
+	\vspace{5mm}
+	\thispagestyle{empty}
+\begin{center}
+	
+	\bigskip
+	\large{
+	Supervision:\\
+	Jan Verbesselt, Ute Sass-Klassen, Mathieu Decuyper
+	}
+\end{center}
+
+\end{titlepage}
+
+\newpage % Table of Contents
+\tableofcontents
+
+
+\newpage % Main Body
+
+\input{chapters/intro}	
+
+\newpage
+\input{chapters/problem}
+
+\newpage
+\input{chapters/rq}
+
+\newpage
+\input{chapters/theory}
+
+\newpage
+\input{chapters/methods}
+
+\newpage
+\input{chapters/results}
+
+\newpage
+\input{chapters/discussion}
+
+\newpage
+\input{chapters/conclusion}
+
+\newpage
+\input{chapters/summary}
+
+	
+\newpage % Glossary
+\clearpage
+\addcontentsline{toc}{section}{Glossary}\label{glossary}
+\printglossaries
+\newpage % References
+\addcontentsline{toc}{section}{References}
+\bibliographystyle{abbrvnat}
+\bibliography{./literature/earlywarn_formort}
+	
+\end{document}

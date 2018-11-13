@@ -1,0 +1,28 @@
+\section{Research Questions}\label{sec:rq}
+The past decades have shown that the increasing frequency of drought events in Catalonia that puts forest ecosystems under stress which might result in more frequent forest decline events. Therefore, the overall goal of this research is to identify Early Warning Signals (EWS) from satellite imagery time series that can be used for predicting forest decline. The processes that lead to forest decline are still not clear. Previous research has shown the impact of climatic anomalies and soil moisture, but still failed to predict the spatial occurrence of such events. The EWS could potentially improve the predictability and be used to explain the role of resilience in the occurrence of forest decline. Three different vegetation indices (NDVI, NDMI, EVI) are used to extract resilience indicators from, each sensitive to different aspects of plant functionality and vitality. Therefore, the following research questions have been stated:
+
+\begin{itemize}
+\item Has there been Critical Slowing Down (CSD) prior to the forest decline event in Catalonia in 2012 which was captured in satellite time series?
+\item If so, is the forest decline linked to the reduction in stability of the ecosystem?
+\item Which EWS are most sensitive to explaining forest decline?
+\end{itemize}
+
+\bigskip
+\bigskip
+
+
+\begin{figure}[!h]
+	\centering
+	\begin{tikzpicture}[node distance = 2cm, auto]
+		% node placement
+		\node [block] (RQ1) {Critical Slowing Down before 2012?};
+		\node [block, below right = of RQ1, xshift = -1cm] (RQ2) {Prediction with resilience indicators?};		
+		\node [block, below right = of RQ2, xshift = -1cm] (RQ3) {Which EWS most indicative?};
+		
+		\path[line] (RQ1) |- (RQ2);
+		\path[line] (RQ2) |- (RQ3);
+	\end{tikzpicture}
+\end{figure}
+
+
+

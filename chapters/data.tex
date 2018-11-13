@@ -1,0 +1,62 @@
+\subsection{Data}\label{subsec:data}
+
+\subsubsection{Sensors}
+By now, there is a variety of optical sensors in space with differing spatial and temporal resolution that fit the purpose of vegetation monitoring. Common pixel sizes vary between 1.5~m (e.g. SPOT Végétation) and several hundreds to thousands of meters (e.g. MODIS, MERIS, Sentinel-5 Tropomi). The revisit time of these sensors mostly depends on the number of satellites supporting the fleet and the footprint per sensor. Recently launched Sentinel-2 operates with two identical satellites to provide a temporal resolution of 5 days at the equator and 2-3 days at mid-latitudes. For the study at hand, not only spatial resolution, but also temporal resolution and the length of the archive matter, since the number of data points (time steps) for each time series should still be given with a high revisit time to ensure sufficient cloud-free observations and long archive. Recent work showed that the spatial resolution was less important than the temporal when extracting EWS (Hendrix, in preparation).\\
+Therefore, the mid-resolution MODIS optical sensor was chosen, since it provides global observations in 1-day intervals due to its wide swath width \citep{modisvcf}. This revisit time allows for a dense time series. Covering such a large area comes at the cost of ground resolution (250~m). The MODIS mission operates on two satellites, Terra and Aqua, which were launched in 1999 and 2002, respectively, and which are both still operating. Their main difference is the orbit in which they fly. Terra's main goal is earth observation for land products, Aqua in contrast aims at sea products. To capture the land surface mostly cloud-free Terra's local orbiting time is 10:30~a.m. in descending mode, Aqua around 1:30~p.m. in ascending mode.\\
+Optical sensors refer to camera-like sensors. The technique describes the capturing of a range of wavelength in the electromagnetic spectrum (i.e. a band), therefore also called multispectral (multiple spectra). This wavelength range can represent the visible light, near-infrared (NIR) or short-wave infrared (SWIR). Since the light source is mostly the sun, these are called passive instruments: they only capture energy, but do not emit any (in contrast to active radar instruments).\\
+The amount of reflected energy depends on the albedo of a surface and is unique to each surface. Hence is it theoretically possible to classify and characterize each surface based on its reflectivity.
+The processes of transmission, reflection, and absorption already feature the importance of knowing the amount of energy emitted by the sun as well as the given processes in the atmosphere to remodel the according reflectance of a given pixel. Therefore, optical remote sensing data can be classified into different processing levels. The dataset used in this thesis was processed or accessed to Level~3 (ready-to-use products: including georeference).\\
+
+
+\subsubsection{Indices}
+The vegetation indices aimed to depict different ground processes that were expected to exhibit CSD. These processes are a representation of plant vitality and/or leaf properties. The first index is called Normalized Difference Vegetation Index (NDVI). NDVI is mostly sensitive to photosynthetic activity. That is because chlorophyll-a and chlorophyll-b absorb light in the red and green spectrum, but highly reflect in NIR. Typical vegetation spectra with varying chlorophyll contents can be seen in figure \ref{fig:vegspec}.
+
+\begin{figure}[htp]
+	\centering
+	\begin{subfigure}{0.49\textwidth}	
+		\centering
+		\includegraphics[width = 0.95\textwidth]{veg_spectra_CAB}
+	\end{subfigure}
+	\begin{subfigure}{0.49\textwidth}	
+		\centering
+		\includegraphics[width = 0.95\textwidth]{veg_spectra_CW}
+	\end{subfigure}
+	\caption{Typical vegetation spectra with LAI = 4, varying chlorophyll and leaf water content modelled in SLC demo \citep{verhoef2007}. Higher chlorophyll content lowers the reflectance in the visible light, whereas leaf water content influences the absorption of light in higher wavelengths.}\label{fig:vegspec}
+\end{figure}	
+
+NDVI was calculated by dividing the difference of the reflectance of these bands over their sum \citep[\textit{cf.} formula \ref{eq:ndvi}, after][]{tucker1979}. High photosynthetic activity is thus shown with a high NDVI. NDVI is widely known and widely used due to its easy calculation and relative robustness against varying atmospheric conditions.\\
+% NDVI literature
+% NDVI formula
+\begin{equation}\label{eq:ndvi}
+	NDVI = \frac{R\textsubscript{NIR} - R\textsubscript{Red}}{R\textsubscript{NIR} + R\textsubscript{Red}} 
+\end{equation}\\
+
+The Enhanced Vegetation Index (EVI) works similar as the NDVI, but accounts for high LAI-values. NDVI tends to saturate at high LAI values. By applying a gain factor to the entire fraction and accounting for canopy as well as aerosol background conditions, it overcomes this obstacle and is more sensitive to LAI and canopy architecture \citep{liu1995}. It was calculated as follows:\\
+\begin{equation}\label{eq:evi}
+	EVI = 2.5 \times \frac{R\textsubscript{NIR} - R\textsubscript{Red}}{R\textsubscript{NIR} + 6 \times R\textsubscript{Red} - 7.5 \times R\textsubscript{Blue} + 1}
+\end{equation}\\
+
+NDMI compares the NIR with the SWIR water absorption feature at 2.1~-~2.3~\textmu m \citep[\textit{cf.} formula \ref{eq:nbr}, after][]{garcia1991}. The NIR reflectance is mainly influenced by the LAI (leaf area index), looking angle and the distribution of the light according to the bidirectional reflectance distribution function (BRDF). Photosynthetically active vegetation shows characteristic behavior in this wavelength region with very high reflectance compared to other surface types. It can reach up to 70\% reflectance in planophile plants with high LAI. The water absorption feature in the SWIR reflectance is mainly influenced by leaf water content (\textit{cf.} fig. \ref{fig:vegspec}), but also LAI. Originally, the NDMI was developed to show fire scars in vegetation (as Normalized Burnt Ratio), but since it is sensitive to changes in leaf water content, it could possibly depict CSD in water availability in the leaves - particularly in the canopy - and water transport, too.\\
+
+\begin{equation}\label{eq:nbr}
+	NDMI = \frac{R\textsubscript{NIR} - R\textsubscript{SWIR}}{R\textsubscript{NIR} + R\textsubscript{SWIR}} 
+\end{equation}\\
+
+The time series were derived from the MOD13Q1.006 Terra Vegetation Indices 16-day Global composite at 250~m resolution \citep{modisvcf}. This is a Level~3-product retrieved from the daily observations of MODIS Terra. These get corrected for atmospherical influences. The 16-day value is the pixel value selected by an algorithm that chooses the closest-to-nadir pixel from the two highest NDVI-observations. It works successfully in all ecosystems, so no constraints were met for the use of this product. The vegetation indices product only features NDVI and EVI, but is provided with the necessary NIR and SWIR bands, so NDMI could be calculated as well. NDMI was calculated after the initiation phase of the SWIR sensor, that showed malfunctioning in its first year of operation (2000-2001).\\
+
+%\subsubsection{Radar Data}\label{subsubsec:radar}
+%Radar instruments capture energy in the microwave spectrum. Usually spaceborne radars are active instruments with a side-looking antenna. It emits polarized microwaves and detects the amplitude and phase of the backscattered wave. This allows for substantially different analyses than optical instruments. As a rule of thumb, electromagnetic waves interact with objects and structures of size of at least their own wavelength. As such, microwaves transmit the atmosphere for their biggest part, not like optical data that is highly influenced by cloud coverage.\\
+%Secondly, since the phase of the wave can be measured, this technology allows for analysis of polarization. This comes in handy for vegetation monitoring. Vegetation is the main source of depolarization. As the microwave hits, for instance, a forest the wave will partially penetrate and interact with either branches or the trunk - depending on the wavelength (frequency). Due to depolarization and socalled volume-scattering microwaves are sensitive to biomass(literature).\\
+%
+%
+%% proper placement of the below paragraph
+%The above described data sources and different indices are all sensitive to different leaf properties: NDVI and EVI are sensitive to chlorophyll content and thus to photosynthetic activity, NBR to leaf water content, and VOD mostly to biomass. Therefore, they cover a wide range of parameters where CSD can be expected. The main difference between NDVI and EVI is that NDVI saturates at high LAI-values. However, it is very easy to calculate and widly used and known. I would expect EVI to be more sensitive to CSD, but the user community might be more susceptible to implement NDVI-based EWS since familiarity is given.
+	
+
+%\subsubsection{Dendrochronology Database}\label{subsubsec:dendrodb}
+
+%a) MODIS NDVI, LAI, EVI, NBR? AMSR-E VOD? MODIS on Terra \& Aqua satellites: time series of NDVI multispectral data since 1999 offers long-term time series with medium resolution (200~m) for earth surface monitoring\\
+%b) Landsat NDVI, EVI, since 1972\\
+%Level 3, products. explanation of pre-processing and product generation\\
+%optical/multispectral data, radar data\\
+

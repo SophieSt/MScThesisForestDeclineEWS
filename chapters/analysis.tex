@@ -1,0 +1,159 @@
+\newgeometry{top=2cm,bottom=2cm,left=2.7cm,right=2.7cm,marginparwidth=2cm}
+
+\begin{figure}[htp]
+	\centering
+	\includegraphics[width = 0.98\textwidth]{FlowChart_MSc_thesis}
+	\caption{A schematic framework of analysis performed in this research including preprocessing, predictor extraction, prediction, validation, and indications for each research question.}\label{fig:flowchart}
+\end{figure}	
+
+\restoregeometry{}
+
+\subsection{Data Analysis}\label{subsec:analysis}
+A schematic framework belonging to the steps followed in the analysis can be found in figure \ref{fig:flowchart}. The overall idea follows the scheme of preprocessing of the satellite images into regular pixel time series, predictor extraction from the time series in the form of Early Warning Signals (EWS), setting up a null model based on previous research, setting up several extended models with the extracted EWS and finally comparing their performance against the null model on a test dataset.\\
+
+
+
+\subsubsection{Preprocessing}
+Preprocessing included the removal of pixels with low quality flags (QA~VI~$>$~1), filtering by date, clipping to the study area, NDMI calculation, outlier removal, and NA-interpolation. Quality flag values of VI~$>$~1 refer to pixels that are affected by the presence of clouds, haze, shadow, snow or high aerosol content. For capturing the resilience of the forests prior to the forest declines, the time series were cut off at the end of 2011 to not obtain a biased resilience-estimate. To obtain the time series for the study area the time series were clipped roughly with a hand-drawn polygon within Google Earth Engine and later on clipped to the the boundaries of Catalonia using the database of Global Administrative Areas \citep[GADM, see][]{gadm}.\\
+The MODIS vegetation indices product \citep[VCF,][]{modisvcf} is a product already aggregated to regular time series of 16-day intervals (equidistant time series) so no further aggregation was needed. The product features time series of NDMI, EVI, surface reflectance values of the blue, red, NIR, and SWIR band and several other metadata band. The calculation of NDMI values was therefore performed per pixel using the NIR and SWIR bands of the VCF product.\\
+Outliers were identified from a given pixel time series if they were outside the H-spread range \textit{H} given by the inter-quartile range multiplied by a mildness factor of 1.5 (compare equation \ref{eq:outliers}). The interpolation of missing values was done by linear interpolation when values were detected outside the interval of 1.5 times the interquartile range(IQR) of a given time series. If missing values were present at the beginning or end of the time series, the first/last value was replicated to avoid extrapolation.
+
+\begin{equation}\label{eq:outliers}
+\begin{aligned}
+	H = 1.5 \times IQR\\
+	IQR = Q3 - Q1
+\end{aligned}
+\end{equation}\\
+
+
+The null model used in this analysis is based on 1~km products \citep{chaparro2017}, so the predictors extracted from the MODIS time series needed to be resampled to this resolution. This was done by bilinear interpolation: averaging the values of the surrounding cells \citep{bernstein1976}. This form of upscaling made sure, that the given plots matched the time series at hand. That is, location, mask and extent of the measured plots were represented by the according pixels from the remote sensing data. The used MODIS pixels spanned an area of 250~m~$\times$~250~m on the ground \citep{modisvcf}. To assure that only forested pixels would be analyzed, pixels with a tree canopy cover of less than 10\% (based on the MODIS VCF product) were masked out, according to the FAO's definition of forest \citep{faoforest}. The FAO defines forest as "land with $\geq$10\% tree canopy cover that is not used for agriculture or settlement, or has~$<$10\% tree canopy cover but is regenerating" \citep{bastin2017}. Tree canopy cover between 10\% and 39\% classify as open forest and above 40\% as closed forest. Visual inspection of the tree canopy cover in the study area showed that low values referring to open forest are encountered frequently, as was expected for dry European forests \citep{bastin2017}. So the satellite time series were masked with pixels of open forest, hence a threshold of 10\%.
+
+
+
+\subsubsection{Predictor Extraction}
+For describing the occurrence of forest declines, a set of explanatory variables was extended with Early Warning Signals (EWS) to investigate whether they can be used to improve the predictability. These EWS are all based on the theory of Critical Slowing Down (CSD) as an indicator of an approaching \gls{tippoint}, that can be seen as leading indicators of \gls{resilience}. An ecosystem with high \gls{resilience} should show lower values and a weaker trend in the metrics than a less resilient ecosystem in which indicators are expected to rise \citep{scheffer2001, scheffer2009a, carpenter2011a, dakos2012, dakos2014}.\\
+In the following, the steps required for the extraction will be laid out.\\
+
+\paragraph{Detrending:}
+Detrending aimed at the removal of trends in the time series that might recur, but have no influence on the rise of e.g. variability or \gls{flickering} \citep{dakos2012}. If the trends are not properly removed the EWS might follow the pattern of the trend. An example for desired detrending is removing seasonality. Detrending of the time series needs to be carried out carefully, as with higher order trend-differencing we might easily overfit the data \citep{dakos2008} and thus remove exactly those deviations from the equilibrium that are actually of interest, since they result from the perturbations and disturbances from which the EWS are calculated. As described above, the main trend in the data followed the pattern of seasonality. A Gaussian kernel function was applied over the time series since it showed to be very flexible. The bandwidth of the Gaussian kernel was assessed in a separate sensitivity analysis.\\
+
+\paragraph{Window Size:}
+Typically, the window size is half the length of the time series \citep{dakos2012}. But in case of fast timescales of a system, a shorter window length is needed (analogously for longer time scales). Still, smaller time scales result in less accurate estimate of the metric at use. Therefore, different window sizes were tested in the sensitivity analysis for the leading indicator autocorrelation. Autocorrelation is sensitive to the choice of window size and was used to assess whether the typical value of half the length of the time series approximates an appropriate response time.\\
+
+\paragraph{Sensitivity Analysis:}
+Due to the various possible choices of parameter settings, the selection of parameters for the extraction of the EWS needed special attention. The parameters that influence the outcome are (as mentioned above) mainly the choice of detrending and the size of the rolling window. The usual procedure for assessing the sensitivity of an EWS to a parameter is by visualizing the outcome for a range of values \citep{dakos2008}. The difficulty of this thesis compared to \cite{dakos2008} is to find an optimal parameter setting for a dataset consisting of several thousand different time series (one per pixel) and different climatic zones. To automatically detect and assess an optimal parameter setting for each time series was considered outside the scope of this thesis. However, the idea of visually assessing the sensitivity analysis of the parameter setting was preserved. 30~pixels were randomly chosen in a stratified random sampling (affected/not affected by forest decline served as strata) for which the sensitivity analysis was carried out (the spatial distribution of the randomly selected points within the study area can be seen in figure \ref{studarea}). Heatmaps of both the trend statistic for ACF-1 (temporal autocorrelation at lag-1) and its according significance were visually analyzed to compare the sensivitity of the trend on changes in either one of these parameters: rolling-window size against the bandwidth of the Gaussian kernel used in detrending. The analysis was further conducted by visually assessing the detrended time series at the same time to confirm successful detrending. Eventually, the parameter setting that showed the strongest significant trend in most analyzed points was chosen.\\
+
+
+
+\paragraph{Generic metric-based EWS:}
+Although there is a wide variety of EWS, they can be grouped based on which CSD phenomenon they describe: rising memory, rising variability and \gls{flickering}. As flickering between dead and alive forests was not expected, the focus lay on the easier to calculate generic indicators describing either rising memory or rising variability: ACF-1, AR(1), standard deviation, skewness, kurtosis and density ratio. They all belong to the group of generic metric-based indicators. In contrast, model-based indicators fit a specific model-type.\\
+The EWS at use will be described in the following section:\\
+\begin{itemize}
+	\item Autocorrelation (ACF(1)) and Spectral Properties. Autocorrelation at lag-1 (AR(1)) is the most basic indicator of CSD. It determines the correlation between a data point \textit{n} and its neighboring point \textit{n~-~1} \citep{carpenter2008}. Different metrics are proposed, all referring to the auto-regressive (AR) coefficient which is mathematically similar to the autocorrelation function. These metrics are therefore describing similar patterns of rising memory. Namely those are the auto-regressive coefficient of the AR(1) model \citep{held2004} and the return rate \citep[inverse of AR(1) model][]{carpenter2008}. Further similar metrics, that account for correlation in higher lags are subsumed under the term spectral properties. That is, rising memory will be observed in so called spectral reddening. They derive the EWS from the power spectrum. EWS are spectral density \citep{kleinen2003}, spectral exponent \citep{dakos2012}, and spectral ratio of low to high frequencies \citep{biggs2009}.
+	\item Variance by Standard Deviation (StDev). Based on the observation that close to a transition slowing down, \gls{flickering} or both can be observed. Both of these phenomena can be captured by StDev and the CV. They both describe the fluctuation around the mean, that is they quantify the deviation from the stable state \citep{carpenter2006}.
+	\item Skewness and Kurtosis. Close to a transition, we observe slow dynamics \citep{scheffer2009b}. Because skewness measures the symmetry of a dataset, slow dynamics will result in a left- or right-skewed distribution \citep{guttal2008}. It is defined as the third moment around the distribution's mean. Depending on whether the alternative state is larger or smaller than the present one, skewness will become positive or negative \citep{dakos2012}. Kurtosis describes the deviation from normal distribution in \textit{y}-direction. In other words it describes whether the slopes of the peak of a distribution are steeper or less steep than the ones of a normal distribution and is hence mathematically defined as the fourth moment around the distribution's mean. In case of a transition we expect the tails of the time series to become fatter \citep{biggs2009}, that is the distribution becomes leptokurtic because rare values will occur more frequently \citep{dakos2012}.
+\end{itemize}
+
+\paragraph{Spatial EWS:}
+Many environmental processes exhibit spatial patterns. Spatial Early Warning Signals are based on the assumption that systems become increasingly spatially homogeneous at close distance when approaching a critical transition, and thus more spatially correlated \citep{kefi2014}. The choice of the spatial EWS depends on the presence or absence of specific spatial patterns, their derivation is otherwise senseless if changes in a certain pattern are absent there will also be no change among them. Among these, patterns like periodicity, anisotropy, and patchiness need to be evaluated for the case at hand. Periodicity will be removed through detrending. Anisotropy refers to a directional spatial gradient. Patchiness is given if the forest consists of e.g. shrubby patches and open patches. Neither did the forests show multiple stable states, nor periodicity in the time series (after detrending) nor patchiness, so the spatial EWS only included the temporal trend in spatial autocorrelation, spatial variance and spatial skewness as well. These are calculated on the pixel distribution within a given spatial distance \citep{kefi2014}, thus within a moving window of 3~$\times$~3 pixels. These three spatial indicators were calculated at each time step and used as input to the trend quantification (see next paragraph).\\
+\begin{itemize}
+	\item Spatial Correlation at Lag-1. Local Moran's I is a Local Indicator of Spatial Association \citep[LISA,][]{anselin1995}. It was calculated as the deviation of the mean of the neighbouring cells compared to that of the center cell \textit{i}:
+	\begin{equation}
+		I_i = z_i \sum_j w_{ij}z_j
+	\end{equation}
+	where $z_i$ and $z_j$ are the deviations from the mean and $w_{ij}$ are weights given in a weights matrix. The weights matrix used in this thesis assigns a value of 1 to all 8 neighboring cells, also called Queen's case.
+	\item Spatial Variance. Spatial variance was calculated as the variance within a kernel of 3~$\times$~3 pixels.
+	\item Spatial Skewness. Similar to spatial variance, spatial skewness was derived as the skewness of values within a 3~$\times$~3 kernel.
+\end{itemize}
+
+
+
+
+\paragraph{Trend Quantification:}
+Kendall's $\tau$ rank correlation coefficient \citep[after][]{kendall1938} was used for testing against the null hypothesis of randomness of the measurements against time \citep{dakos2012}. The value of $\tau$ increases in case of a positive trend over time. That is, the respective EWS increases over time. Analogously, it decreases in case of a negative trend. In case of the null hypothesis of randomness in the trend, Kendall's $\tau$ is expected to show low absolute values. Spearman's $\rho$ rank correlation or Pearson's correlation coefficient would both also be valid trend measures. However, for time series analyses and EWS Kendall's $\tau$ is most frequently used, so it was also the statistic of choice for this analysis. If the time series (of the EWS) is free of ties with the time vector (converging with time), Kendall's $\tau$ was calculated as given in equation~\ref{eq:kendall}. In case of ties the algorithm \citep{mcleod2005} performed a continuity correction as described in \cite{kendall1976}. 
+\begin{equation}\label{eq:kendall}
+	\tau = S / D \\
+\end{equation}	
+where 
+\begin{equation*}
+\begin{aligned}
+	S = \sum_{i < j} (sign(x[j & ] - x[i]) \times sign(y[j] - y[i])) \\
+	&D = n(n - 1)/2
+\end{aligned}
+\end{equation*}\\
+
+\subsubsection{Principal Component Analysis}
+The response variable forest decline is binary and qualitative (declined~=~1, not affected by decline~=~0). This was modeled based on the logistic regression model by \cite{chaparro2017}. Logistic regression means that the underlying mechanisms are linear in a way that the log-transformed odds follow a linear relationship with the predictors. This holds advantages as the interpretation is more straight-forward: an increase in a given predictor leads to a higher or lower probability of an observation being classified as a success (see chapter below on the prediction). But on the other hand correlation between predictors leads to an incorrect estimation of the explained variability and relationship. This problem is called multicollinearity and its magnitude can be estimated by the Variance-Inflation Factor (VIF).\\
+The EWS all indicate resilience, making them per se correlated. To overcome the correlation, the predictor set of the trends of the EWS was transformed with a Principal Component Analysis (PCA). The PCA decorrelates a given feature space by rotating it towards the axes of maximum variance \citep{james2013}. Each axis is constructed orthogonal to all others. The rotation axis is defined as the loading vectors $\phi_1 , ..., \phi_p$ for each Principal Component (compare equation \ref{eq:loadvectPCA} for the first PC Z\textsubscript{1}): 
+
+\begin{equation}\label{eq:loadvectPCA}
+	Z_1 = \phi_{11}X_1 + \phi_{21}X_2 + ... \phi_{p1}X_p
+\end{equation}\\
+
+The decorrelated first Principal Components explaining up to 95\% of the cumulated variability in the EWS-trend dataset were then used in the prediction to extend the null model. As PCA rotates the feature space towards the highest variability, a so called elbow effect will take place. This means that most information in the dataset can be contained in the first Principal Components. These are characterized by high explained variance and high eigenvalues. Both the explained variance and eigenvalue will show a flattening effect (elbow). Therefore, only the subset of first Principal Components explaining this majority of information will be used in the prediction. To understand why a certain Principal Component shows significance, the magnitude of relationship of each EWS-trend with their according loading vectors were inspected.\\
+
+
+\subsubsection{Null Model}
+A null model was chosen based on \citep{chaparro2017}. This model was later extended with the extracted predictors (see next chapter about the prediction). This null model was constructed from the final set of predictors that consisted of species, mean annual radiation (MAR), mean annual precipitation (MAP), summer temperature anomaly SPI3 and SPI12 (referring to the span of months from which the anomaly was derived) and the mean summer soil moisture as derived from the SMOS afternoon overpass. SMOS (Soil Moisture and Ocean Salinity) is a European mission operating a passive radar instrument. It is designed as an interferometric radiometer in the L-band \citep[f~=~1.4~GHz, $\lambda$ ~=~21~cm][]{kerr2001} to provide key variables such as soil moisture and sea surface salinity based on the emitted energy in these low frequencies. Its ground resolution of 50~km is comparably high for passive microwave remote sensing, but for the purpose of modeling a phenomenon such as forest decline need to be downscaled. The downscaled 1~km product that \cite{chaparro2017} obtained from the BEC \citep[Barcelona Expert Center][]{becsmos} was achieved in a combination with MODIS LST and NDVI data.\\
+The model structure is based on a logistic regression that managed to explain almost 40\% of the occurrence of Catalonian forest declines in 2012. Species as a predictor explained almost 50\% of the variability within these 40\%. They scaled and centered the predictors as input into the model and included interactions between species and SPI3, SPI12, and soil moisture in the final predictor set \citep{chaparro2017}.\\
+
+
+%\FloatBarrier
+\subsubsection{Prediction \& Testing}
+Logistic regression is a classification approach that models the log-odds of an observation to be a success with a linear combination of the explanatory variables. Success in statistics describes the positive occurrence of the response variable. That is, a success was given as a forest observation that was affected by decline. This formulation originates in the attempt to model the outcome of the event to happen, so it is a success when correctly predicted (statistical success). The classification into affected or not-affected by forest decline was described with a multiple logistic regression model, that is there was a binary outcome to be modeled by $p$ predictors. The logistic model describes the relationship between a set of predictors and the probability of the response variable based on intercept $\alpha$ and slopes $\beta\textsubscript{1,...,p}$ for the predictors in the following way \citep{james2013}:
+\begin{equation}
+	p(X) = \frac{e^{\beta_0 + \beta_1 X_1 + ... + \beta_p X_p}}{1 + e^{\beta_0 + \beta_1 X_1 + ... + \beta_p X_p}}
+\end{equation}\\
+and the relationship between the predictors and the odds $\frac{p(X)}{1 - p(X)}$:
+\begin{equation}
+	log(\frac{p(X)}{1 - p(X)}) = \beta_0 + \beta_1 X_1 + ... + \beta_p X_p
+\end{equation}\\
+The null model of \cite{chaparro2017} was extended with one resilience indicator at a time to assess the added value of it to explain the role of resilience in the occurrence of forest decline. The resilience indicator was included in the model formula together with the interaction of the indicator with tree species. The Principal Components were also introduced together with their interaction with species. Since not all PC's or interaction terms were significant, the least significant term was left out of the PCA-based model until all remaining (additional) terms were significant. This procedure is also known as Backwards Elimination and was only applied to models containing the PC's.\\
+Other (more flexible) models like Support Vector Machines \citep{hearst1998} or Random Forests \citep{breiman1999} split up the feature space to according output and require more knowledge on the parameter setting and are thus more difficult to set up and interpret. But due to their flexibility they also tend to yield very accurate results when data availability is high and the main interest is model performance and less on interpretability or the unveiling of underlying processes.\\
+The dataset was split into a training and a testing dataset by a stratified random sampling on with a split of 80/20, so that 80\% of the observations were used in training the model and the other 20\% were kept aside to be tested on. Since there was just one complete dataset, only testing was performed but no validation. The training dataset was used to set up and train the model. The test dataset was used to independently assess the performance of the model to predict the occurrence.\\
+
+
+\subsubsection{Model Comparison}
+To obtain insight into whether the inclusion of EWS improves the predictability of forest decline, the goodness of fit was assessed using different measures calculated from the confusion matrix:
+
+\begin{table}[H]
+	\centering
+	\includegraphics[width = 0.7\textwidth]{ConfMatrix.png}
+	\caption{Confusion Matrix of a classification. In this thesis positive refers to 'affected by forest decline' and negative to 'not affected' respectively \citep{james2013}.}\label{methods:conf_matrix}
+\end{table}
+
+These included the overall test accuracy calculated as the fraction of correctly classified observations over the total amount of observations in the test dataset:
+
+\begin{equation}
+	Acc = \frac{TN + TP}{TN + FN + TP + FP}
+\end{equation}\\
+
+as well as specificity, sensitivity calculated in the following way:
+
+\begin{table}[H]
+	\centering
+	\includegraphics[width = 0.7\textwidth]{ConfMatrixMetrics.png}
+	\caption{Derived measures of goodness of fit \citep{james2013}.}\label{methods:conf_matrix_metrics}
+\end{table}
+
+and Cohen's $\kappa$ test statistic:
+
+Another measure for the goodness of fit is Cohen's $\kappa$ \citep{cohen1960}, which accounts for the by-chance agreement based on the prior probabilities. Since both, sensitivity and specificity, report the correctly classified fraction per class, only these two will be reported instead of Cohen's $\kappa$. Because accounting for unbalanced prior probabilities, all the here mentioned statistics (Cohen's $\kappa$, sensitivity, specificitiy) are more balanced indicators than accuracy. In the case at hand the total number of observations belonging to the success class 'affected by forest decline' is much lower than those of 'not affected by forest decline'.\\
+The focus of this research is on both explaining forest decline and on model performance. Accuracy, specificity and sensitivity are indicators of model performance on an independent dataset. The model assessment in terms of explanatory power focused mainly on the explained deviance and the Akaike Information Criterion \citep[AIC after][]{akaike1973}, which are both derived from the training dataset. The more deviance was explained by the model, the lower the AIC and thus the better the model manages to capture the underlying mechanism. They were calculated in the following way:
+
+\begin{equation}\label{eq:devExpl}
+	D_{explained} = 1 - \frac{D_{residuals}}{D_{null}}
+\end{equation}\\
+
+\begin{equation}\label{eq:aic}
+	AIC = 2k - 2 \ln(\hat{L})
+\end{equation}\\
+where $k$ denotes number of estimated parameters and $\hat{L}$ denotes the maximum value of the likelihood function.\\
+
+
+
+\subsection{Software}
+Remote Sensing data were searched in Google Earth Engine's IDE (Integrated Development Environment), where they were also roughly clipped to the study area, masked for forest extent, filtered by date, filtered for low-quality pixels, and the NDMI was calculated. Google Earth Engine is a Big Data-architecture and platform for earth observation data and related products \citep{gorelick2017}. It hosts data in the volume of peta-byte that can be processed on Google's computational infrastructure. The processing works in MapReduce-implementation, as usual in Big Data. In MapReduce evaluations are performed 'lazy' \citep{dean2008}, that is the actual calculation only takes place when a Reduce-function is called. Until that point, functions are called and 'mapped' over each other without being performed. This enables optimization of the functions at the point of a Reduce-call. In Google Earth Engine, one Map-example is the masking of forested pixels, a Reduce-example is the visualization of a dataset in the Viewer. The Reduce in this case only performs summary calculations for the resolution of the viewer given by the zoom-scale. This Big Data-architecture makes it possible to access different Big Data sets from different sources (e.g. NASA, esa, or USGS) and (pre)process them for either global scale analyses or like in the case at hand for a smaller study area but still big data set due to the high dimensionality in the temporal scale. Conventional data processing techniques would either fail or be very tedious in downloading each tile, mosaicking, masking, and eventually aggregating \citep[study area spanning over four MODIS tiles of which each ca.~93~MB per time step][]{modisvcf}). The preprocessing in Google Earth Engine could have as well been done over the Python API (Application Program Interface). The IDE showed the advantage of the Viewer that could visualize the big amounts of data at different processing steps in an interactive way, such as mouse-clicking a certain point in the map and deriving pixel values or visualizing the time series.\\
+Processing in R was run in most parts on a Virtual Machine (VM) on the High Performance Cluster (HPC) of SurfSARA. SurfSARA makes use of the Dutch national e-infrastructure. This allowed for fast processing of the still big amounts of data and provided the possibility to parallelise analyses on multiple cores.\\
+The connection between Google Earth Engine and the VM used a personal Google Drive account from which the datasets were automatically downloaded using the R-package \textit{googledrive} \citep{dagostino2017}. Time series as bands of image collections were then exported and loaded into R for further processing \citep{team2013}. The NA-interpolation used the package \textit{zoo} \citep{zeileis2018}. The EWS were extracted using the packages \textit{earlywarnings} \citep{earlywarnr}, and spatial/raster analyses with \textit{rgdal} \citep{bivand2014}, and \textit{raster} \citep{hijmans2014}. The stratified random sampling for the training and testing was conducted using preprocessing techniques from the package \textit{caret} \citep{kuhn2008} that condenses the most common prediction techniques used in statistical learning. All other processing steps were either performed with the standard R packages \citep{team2013} or with packages loaded from within the above mentioned packages.\\
+
